@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
@@ -432,6 +433,11 @@ export default function Home() {
                 ))}
               </div>
             </div>
+
+            <Link className="prototype-mode-link" href="/prototype">
+              <span>Enter prototype mode</span>
+              <span aria-hidden="true">↗</span>
+            </Link>
           </div>
         </section>
 
