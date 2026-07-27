@@ -90,6 +90,23 @@ const STORY_SLIDES: StorySlide[] = [
     ),
   },
   {
+    id: "statement",
+    title: "the real problem",
+    description: (
+      <>
+        <p className="problem-statement-lead">
+          the problem isn’t the bill. it’s the silence around it.
+        </p>
+        <p>
+          before anyone pays, people stay quiet about what they can afford,
+          nobody wants to be the one who says “too much.” and after someone
+          fronts the money, friends avoid asking to be paid back, choosing to
+          lose cash rather than risk the friendship.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "problem",
     title: "how do i know this is a problem?",
     description: (
@@ -145,30 +162,69 @@ const STORY_SLIDES: StorySlide[] = [
   },
   {
     id: "opportunities",
-    title: "five ideas. four honest no’s.",
+    title: "opportunity areas",
     description: (
       <>
-        <p>
-          <strong>quorum.</strong> the discomfort was specific, and i could
-          picture the exact moment the product needed to help.
+        <div className="opportunity-grid">
+          <div className="opportunity-area">
+            <strong>
+              let people say what works without making it public?
+            </strong>
+            <span>
+              private answers. the group only learns which plans clear, not who
+              said no, and not what anyone can afford.
+            </span>
+          </div>
+          <div className="opportunity-area">
+            <strong>
+              make the decision about a real personal number?
+            </strong>
+            <span>
+              turn the group total into the per-person amount each person is
+              actually answering, before anyone pays.
+            </span>
+          </div>
+          <div className="opportunity-area">
+            <strong>
+              settle without anyone fronting money or chasing friends?
+            </strong>
+            <span>
+              connect bank and credit accounts, pay the merchant directly, and
+              split equally at booking. so no one chases $30 later.
+            </span>
+          </div>
+        </div>
+      </>
+    ),
+  },
+  {
+    id: "solution",
+    title: "so the product does one hard thing.",
+    description: (
+      <>
+        <p className="solution-lead">
+          quorum gets the group to a private yes on the real per-person cost,
+          then books by charging everyone equally and paying the merchant
+          directly. no one fronts. no one chases.
         </p>
-        <p>
-          <strong>rent almost anything.</strong> i could not get past one boring
-          question: would i hand my camera to a stranger? honestly, no.
-        </p>
-        <p>
-          <strong>a personal finance guide.</strong> real problem, crowded
-          category, and no sharp enough reason to exist.
-        </p>
-        <p>
-          <strong>finance as a game.</strong> i loved the 3d character more than
-          the underlying problem. that felt like a warning.
-        </p>
-        <p>
-          <strong>money for international students.</strong> wiring about
-          $9,000 from ahmedabad to boston was personal pain, but the idea kept
-          turning into a housing product.
-        </p>
+
+        <div className="solution-steps">
+          <div className="solution-step">
+            <span className="solution-step-label">01</span>
+            <strong>agree privately</strong>
+            <span>each person answers what works for them.</span>
+          </div>
+          <div className="solution-step">
+            <span className="solution-step-label">02</span>
+            <strong>pick a plan</strong>
+            <span>the group moves on what cleared for everyone.</span>
+          </div>
+          <div className="solution-step">
+            <span className="solution-step-label">03</span>
+            <strong>pay together</strong>
+            <span>merchant gets paid. the cost splits equally.</span>
+          </div>
+        </div>
       </>
     ),
   },
@@ -177,27 +233,47 @@ const STORY_SLIDES: StorySlide[] = [
     title: "once i chose the problem, the interface got quieter.",
     description: (
       <>
-        <p>
-          <strong>characters and nicknames</strong> make one honest answer feel
-          less like a public rejection.
-        </p>
-        <p>
-          <strong>two budget answers</strong>, works for me or too much, remove
-          the vague negotiation hiding inside “a stretch.”
-        </p>
-        <p>
-          <strong>url-first options</strong> start with the link people already
-          have. the price stays editable because dates, guests, taxes and fees
-          change the real cost.
-        </p>
-        <p>
-          <strong>the personal share</strong> turns $1,860 into the number
-          someone can answer: $310 each for six people.
-        </p>
-        <p>
-          <strong>separate approval</strong> means choosing a favorite never
-          gives quorum permission to charge someone.
-        </p>
+        <div className="decision-list">
+          <div className="decision-row">
+            <span className="decision-tag">privacy</span>
+            <strong className="story-mark">characters and nicknames</strong>
+            <span>
+              make one honest answer feel less like a public rejection.
+            </span>
+          </div>
+          <div className="decision-row">
+            <span className="decision-tag">privacy</span>
+            <strong className="story-mark">two budget answers</strong>
+            <span>
+              works for me or too much. remove the vague negotiation hiding
+              inside “a stretch.”
+            </span>
+          </div>
+          <div className="decision-row">
+            <span className="decision-tag">cost</span>
+            <strong className="story-mark">url-first options</strong>
+            <span>
+              start with the link people already have. the price stays editable
+              because dates, guests, taxes and fees change the real cost.
+            </span>
+          </div>
+          <div className="decision-row">
+            <span className="decision-tag">cost</span>
+            <strong className="story-mark">the personal share</strong>
+            <span>
+              turns $1,860 into the number someone can answer: $310 each for
+              six people.
+            </span>
+          </div>
+          <div className="decision-row">
+            <span className="decision-tag">settlement</span>
+            <strong className="story-mark">direct split at booking</strong>
+            <span>
+              connects everyone’s account, pays the merchant, and cuts the cost
+              equally. so nobody fronts $1,860 or chases $30 later.
+            </span>
+          </div>
+        </div>
       </>
     ),
   },
@@ -206,25 +282,33 @@ const STORY_SLIDES: StorySlide[] = [
     title: "how i actually worked.",
     description: (
       <>
-        <p>
-          have an idea. get suspicious of it. build the smallest version. use
-          it. notice what feels confusing. rewrite it. break something. fix it.
-          repeat.
-        </p>
-        <p>
-          figma held the structure. mobbin helped me study invitations, groups
-          and shared decisions. chatgpt and claude challenged assumptions and
-          copy. codex agents helped build, test and debug the shared state,
-          invite flow and deployment.
-        </p>
-        <p>
-          the product runs on next.js, react, typescript, vercel, cloudflare d1
-          and gsap.
-        </p>
-        <p>
-          ai made the loop faster. it did not decide which problem mattered or
-          when the writing sounded fake.
-        </p>
+        <div className="process-beats">
+          <div className="process-beat">
+            <span className="process-label story-mark">process</span>
+            <p>
+              have an idea. get suspicious of it. build the smallest version.
+              use it. notice what feels confusing. rewrite it. break something.
+              fix it. repeat.
+            </p>
+          </div>
+          <div className="process-beat">
+            <span className="process-label story-mark">tools</span>
+            <p>
+              figma held the structure. mobbin helped me study invitations,
+              groups and shared decisions. chatgpt and claude challenged
+              assumptions and copy. codex agents helped build, test and debug
+              the shared state, invite flow and deployment.
+            </p>
+          </div>
+          <div className="process-beat">
+            <span className="process-label story-mark">stack</span>
+            <p>
+              the product runs on next.js, react, typescript, vercel, cloudflare
+              d1 and gsap. ai made the loop faster. it did not decide which
+              problem mattered or when the writing sounded fake.
+            </p>
+          </div>
+        </div>
       </>
     ),
   },
@@ -233,19 +317,31 @@ const STORY_SLIDES: StorySlide[] = [
     title: "what i’d do next.",
     description: (
       <>
-        <p>
-          i’d put quorum in front of three real groups planning real trips. not
-          usability-test trips. trips with dates, uneven salaries and one friend
-          who always finds the expensive airbnb.
-        </p>
-        <p>
-          i’d watch for two things: does privacy make people more honest? and
-          does a binary answer feel freeing, or simply too blunt?
-        </p>
-        <p>
-          if those hold, i’d work next on changed prices, partial participation
-          and the moment no option works for everyone.
-        </p>
+        <div className="next-beats">
+          <div className="next-beat">
+            <span className="process-label story-mark">test</span>
+            <p>
+              i’d put quorum in front of three real groups planning real trips.
+              not usability-test trips. trips with dates, uneven salaries and
+              one friend who always finds the expensive airbnb.
+            </p>
+          </div>
+          <div className="next-beat">
+            <span className="process-label story-mark">watch</span>
+            <p>
+              does privacy make people more honest? does a binary answer feel
+              freeing, or simply too blunt? and do people trust connecting
+              accounts for a group booking?
+            </p>
+          </div>
+          <div className="next-beat">
+            <span className="process-label story-mark">then</span>
+            <p>
+              if those hold, i’d work next on changed prices, partial
+              participation and the moment no option works for everyone.
+            </p>
+          </div>
+        </div>
       </>
     ),
   },
@@ -661,8 +757,6 @@ export default function Home() {
             </Link>
           </div>
         </section>
-
-        <section className="story-outro" aria-hidden="true" />
       </main>
     </>
   );
