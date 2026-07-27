@@ -118,6 +118,8 @@ body {
 }
 
 .story-sequence {
+  --story-slide-title-size: clamp(40px, 4.45vw, 64px);
+
   position: relative;
   z-index: 1;
   min-height: 100svh;
@@ -225,7 +227,7 @@ body {
   max-width: 19ch;
   margin: 0;
   color: var(--ink);
-  font-size: clamp(40px, 4.45vw, 64px);
+  font-size: var(--story-slide-title-size);
   font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 1.08;
@@ -260,15 +262,117 @@ body {
   text-underline-offset: 0.14em;
 }
 
+.evidence-intro {
+  max-width: 66ch;
+  margin-bottom: 32px !important;
+}
+
+.story-slide-problem .slide-description {
+  width: 100%;
+  max-width: none;
+  margin-top: 40px;
+  gap: 0;
+}
+
+.story-slide-problem {
+  padding-bottom: 24px;
+}
+
+.story-slide-problem h2 {
+  max-width: none;
+  white-space: nowrap;
+}
+
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 38px;
+}
+
+.evidence-thought {
+  display: grid;
+  min-height: 136px;
+  align-content: space-between;
+  gap: 20px;
+  padding: 28px;
+  border-radius: 8px;
+  background: var(--story-cream);
+  color: var(--ink);
+  font-size: clamp(20px, 1.8vw, 26px);
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.evidence-thought .evidence-context {
+  color: rgba(36, 35, 31, 0.58);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.evidence-attribution {
+  color: rgba(36, 35, 31, 0.5);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.survey-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px;
+}
+
+.survey-finding {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  color: var(--ink);
+}
+
+.survey-finding strong {
+  font-size: clamp(32px, 3vw, 44px);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.survey-finding > span:not(.survey-source) {
+  max-width: 34ch;
+  color: rgba(36, 35, 31, 0.72);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.survey-source {
+  color: rgba(36, 35, 31, 0.5);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
 .story-slide-intro {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: center;
+  align-items: start;
   gap: 64px;
 }
 
 .story-slide-intro .slide-description {
-  gap: 24px;
+  max-width: 54ch;
+  margin-top: 24px;
+  gap: 16px;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.story-slide-intro .intro-lede {
+  color: var(--ink);
+  font-size: clamp(18px, 1.4vw, 20px);
+  line-height: 1.4;
 }
 
 .intro-photo-stack {
@@ -310,7 +414,7 @@ body {
 .prototype-mode-link {
   position: absolute;
   z-index: 4;
-  bottom: max(24px, env(safe-area-inset-bottom));
+  bottom: max(8px, env(safe-area-inset-bottom));
   left: 50%;
   display: inline-flex;
   min-height: 52px;
@@ -384,6 +488,8 @@ body {
 
 @media (max-width: 900px), (prefers-reduced-motion: reduce) {
   .story-sequence {
+    --story-slide-title-size: clamp(38px, 10vw, 56px);
+
     height: auto !important;
   }
 
@@ -449,13 +555,29 @@ body {
   }
 
   .story-slide h2 {
-    font-size: clamp(38px, 10vw, 56px);
+    font-size: var(--story-slide-title-size);
   }
 
   .slide-description {
     max-width: 100%;
     margin-top: 32px;
     font-size: 16px;
+  }
+
+  .evidence-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .survey-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .story-slide-problem h2 {
+    white-space: normal;
+  }
+
+  .evidence-thought {
+    min-height: 116px;
   }
 
   .story-slide-intro {
@@ -497,6 +619,39 @@ body {
 @media (max-height: 720px) and (min-width: 701px) {
   .computer-wrap {
     width: min(48vw, 54svh, 420px);
+  }
+}
+
+@media (min-width: 901px) and (max-height: 850px) {
+  .story-slide-problem .slide-description {
+    margin-top: 24px;
+  }
+
+  .evidence-intro {
+    margin-bottom: 20px !important;
+  }
+
+  .evidence-grid {
+    margin-bottom: 24px;
+  }
+
+  .evidence-thought {
+    min-height: 104px;
+    gap: 12px;
+    padding: 16px;
+    font-size: 20px;
+  }
+
+  .survey-finding {
+    gap: 4px;
+  }
+
+  .survey-finding strong {
+    font-size: 28px;
+  }
+
+  .survey-finding > span:not(.survey-source) {
+    font-size: 14px;
   }
 }
 

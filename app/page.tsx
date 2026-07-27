@@ -46,10 +46,20 @@ const STORY_SLIDES: StorySlide[] = [
     title: "hey, i’m panth.",
     description: (
       <>
-        <p>product designer at samsung by day.</p>
-        <p>i build things at 1am by choice.</p>
+        <p className="intro-lede">
+          I’m Panth. I design eCommerce experiences at Samsung Electronics in
+          Mountain View.
+        </p>
         <p>
-          this is how five fintech ideas became one working product.
+          I grew up in Ahmedabad, studied in Boston, and ended up in the Bay
+          Area. Every move taught me something new about how people actually use
+          things. I care most about the messy, complex flows, checkout,
+          onboarding, the stuff nobody notices when it works.
+        </p>
+        <p>
+          Outside of work? I take way too many photos. I’ll say yes to almost
+          any game, and I’ve made real friends from cold LinkedIn DMs.
+          Embarrassing to admit, but it works.
         </p>
       </>
     ),
@@ -64,57 +74,72 @@ const STORY_SLIDES: StorySlide[] = [
           decisions.
         </p>
         <p>
-          the prototype starts with six friends planning a san diego trip. they
-          find a stay for $1,860.
+          you know the drill. someone books, adds it to splitwise, then spends
+          two weeks nudging a friend over $30.
         </p>
-        <p>quorum asks the more useful question: does $310 each work?</p>
+        <p>
+          quorum flips the order. the group agrees on the real per-person cost
+          before anyone pays. everyone privately answers “works for me” or “too
+          much,” so no one has to explain what they can afford.
+        </p>
+        <p>
+          six friends. a san diego stay for $1,860. one useful question: does
+          $310 each work?
+        </p>
       </>
     ),
   },
   {
     id: "problem",
-    title: "the awkward part isn’t the math.",
+    title: "how do i know this is a problem?",
     description: (
       <>
-        <p>
-          someone drops an airbnb in the group chat. everyone loves the pool.
-          then $310 each lands, and one person quietly starts doing the math
-          against rent.
+        <p className="evidence-intro">
+          i looked through travel surveys and reddit threads about splitwise,
+          group trips, and getting paid back. i kept finding the same awkward
+          moments.
         </p>
-        <p>
-          experian surveyed more than 700 people who had travelled with friends.
-          only 1 in 4 groups set a budget upfront. more than half of gen z and
-          millennial travellers had argued about money on a trip.{" "}
-          <a
-            href="https://www.experian.com/blogs/ask-experian/survey-financial-stress-of-traveling-with-friends/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            read the survey
-          </a>
-          .
-        </p>
-        <p>
-          <a
-            href="https://www.reddit.com/r/Chennai/comments/w2nlqy"
-            target="_blank"
-            rel="noreferrer"
-          >
-            one reddit user
-          </a>{" "}
-          covered an ₹8,000 dinner, then worried that asking for it back would
-          make them look cheap. a{" "}
-          <a
-            href="https://www.nytimes.com/2025/11/12/podcasts/bankaccountdating.html"
-            target="_blank"
-            rel="noreferrer"
-          >
-            new york times modern love story
-          </a>{" "}
-          opened with the same tension: splitting the bill felt awkward, but
-          paying it alone was getting expensive.
-        </p>
-        <p>the missing piece wasn’t a calculator. it was a safer way to say no.</p>
+
+        <div className="evidence-grid">
+          <div className="evidence-thought">
+            <p className="evidence-context">user 1</p>
+            <p>
+              “i don’t want to ask for it back. what if i come off as cheap?”
+            </p>
+            <p className="evidence-attribution">reddit research pattern</p>
+          </div>
+          <div className="evidence-thought">
+            <p className="evidence-context">user 2</p>
+            <p>
+              “i can’t afford this trip. i just don’t want to be the one who
+              says it.”
+            </p>
+            <p className="evidence-attribution">travel research pattern</p>
+          </div>
+        </div>
+
+        <div className="survey-grid">
+          <p className="survey-finding">
+            <strong>76%</strong>
+            <span>
+              of gen z who fronted a group expense said they were not fully
+              repaid.
+            </span>
+            <span className="survey-source">
+              zelle avoidance economy report, 2026
+            </span>
+          </p>
+          <p className="survey-finding">
+            <strong>55%</strong>
+            <span>
+              said the money created tension or negatively affected a
+              relationship.
+            </span>
+            <span className="survey-source">
+              reported by the new york post, 2026
+            </span>
+          </p>
+        </div>
       </>
     ),
   },
@@ -590,7 +615,7 @@ export default function Home() {
                   <article
                     className={`story-slide ${
                       slide.intro ? "story-slide-intro" : ""
-                    }`}
+                    } story-slide-${slide.id}`}
                     key={slide.id}
                   >
                     <div className="slide-copy">
