@@ -236,6 +236,7 @@ export default function Home() {
   const challengeRef = useRef<HTMLElement>(null);
   const storySequenceRef = useRef<HTMLElement>(null);
   const storyTrackRef = useRef<HTMLDivElement>(null);
+  const storyIntroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const sequence = sequenceRef.current;
@@ -337,8 +338,9 @@ export default function Home() {
   useEffect(() => {
     const storySequence = storySequenceRef.current;
     const storyTrack = storyTrackRef.current;
+    const storyIntro = storyIntroRef.current;
 
-    if (!storySequence || !storyTrack) {
+    if (!storySequence || !storyTrack || !storyIntro) {
       return;
     }
 
@@ -353,6 +355,7 @@ export default function Home() {
     let storyDistance = 1;
     let storyTravel = 0;
     let storyEnabled = false;
+    let viewportHeight = window.innerHeight;
 
     const render = () => {
       frame = 0;
@@ -364,9 +367,18 @@ export default function Home() {
       const storyProgress = clamp(
         (latestScrollY - storyStart) / storyDistance,
       );
+      const introProgress = smoothstep(
+        (latestScrollY - (storyStart - viewportHeight * 0.62)) /
+          (viewportHeight * 0.5),
+      );
+
       storyTrack.style.transform = `translate3d(${
         -storyTravel * storyProgress
       }px, 0, 0)`;
+      storyIntro.style.opacity = String(introProgress);
+      storyIntro.style.transform = `translate3d(0, ${
+        24 * (1 - introProgress)
+      }px, 0)`;
     };
 
     const requestRender = () => {
@@ -386,6 +398,7 @@ export default function Home() {
         const storySequenceRect = storySequence.getBoundingClientRect();
 
         storyStart = storySequenceRect.top + window.scrollY;
+        viewportHeight = window.innerHeight;
         storyTravel = Math.max(
           storyTrack.scrollWidth - window.innerWidth,
           0,
@@ -401,9 +414,15 @@ export default function Home() {
             window.innerHeight + storyTravel
           }px`;
           storyTrack.style.willChange = "transform";
+          storyIntro.style.willChange = "transform, opacity";
+          storyIntro.style.opacity = "0";
+          storyIntro.style.transform = "translate3d(0, 24px, 0)";
         } else {
           storyTrack.style.transform = "";
           storyTrack.style.willChange = "";
+          storyIntro.style.opacity = "";
+          storyIntro.style.transform = "";
+          storyIntro.style.willChange = "";
         }
 
         requestRender();
@@ -552,14 +571,18 @@ export default function Home() {
           aria-labelledby="story-heading"
         >
           <div className="story-stage">
-            <header className="story-setup">
-              <h2 id="story-heading">what are we building today?</h2>
-              <p>
-                quorum is a private decision room for shared financial choices.
-                it helps groups reach a clear answer without turning money into
-                a referendum on their relationships.
-              </p>
-            </header>
+            <div className="story-intro-position">
+              <div className="story-intro" ref={storyIntroRef}>
+                <div className="story-title-card">
+                  <h2 id="story-heading">What are we building today?</h2>
+                </div>
+                <p className="story-description">
+                  Quorum is a private decision room for shared financial
+                  choices. It helps groups reach a clear answer without turning
+                  money into a referendum on their relationships.
+                </p>
+              </div>
+            </div>
 
             <div className="story-viewport">
               <div className="story-track" ref={storyTrackRef}>

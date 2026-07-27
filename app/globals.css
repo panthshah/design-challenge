@@ -130,40 +130,56 @@ body {
   overflow: hidden;
 }
 
-.story-setup {
+.story-intro-position {
   position: absolute;
-  top: 5svh;
-  right: 5vw;
-  left: 5vw;
-  display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1.2fr);
-  align-items: start;
-  gap: clamp(32px, 6vw, 96px);
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
 }
 
-.story-setup h2,
-.story-setup p {
+.story-intro {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.story-title-card {
+  position: absolute;
+  top: 6.7svh;
+  left: 4vw;
+  display: flex;
+  width: 219px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  transform: rotate(-12.95deg);
+  background: #fff;
+}
+
+.story-title-card h2 {
+  width: 187px;
   margin: 0;
-}
-
-.story-setup h2 {
-  max-width: 13ch;
-  color: var(--ink);
-  font-size: clamp(32px, 3vw, 44px);
+  color: #000;
+  font-size: clamp(20px, 1.67vw, 24px);
   font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 1.08;
-  text-wrap: balance;
+  letter-spacing: -0.025em;
+  line-height: 1.18;
 }
 
-.story-setup p {
-  max-width: 58ch;
-  justify-self: end;
-  color: rgba(36, 35, 31, 0.76);
+.story-description {
+  position: absolute;
+  top: 7.1svh;
+  right: 3vw;
+  width: min(41.2vw, 593px);
+  margin: 0;
+  padding: 10px 16px;
+  border: 1px solid #000;
+  border-radius: 8px;
+  background: var(--story-cream);
+  color: #000;
   font-size: clamp(16px, 1.25vw, 18px);
   font-weight: 700;
-  line-height: 1.5;
-  text-wrap: pretty;
+  line-height: 1.25;
 }
 
 .story-viewport {
@@ -378,20 +394,37 @@ body {
     padding: 80px 20px;
   }
 
-  .story-setup {
+  .story-intro-position {
     position: static;
-    grid-template-columns: 1fr;
-    gap: 24px;
-    margin-bottom: 48px;
   }
 
-  .story-setup h2 {
-    font-size: clamp(36px, 10vw, 52px);
+  .story-intro {
+    position: static;
+    display: flex;
+    max-width: 620px;
+    padding: 0 0 64px;
+    flex-direction: column;
+    align-items: flex-start;
+    opacity: 1;
+    transform: none !important;
   }
 
-  .story-setup p {
-    max-width: 65ch;
-    justify-self: start;
+  .story-title-card {
+    position: static;
+    width: min(72vw, 260px);
+    min-height: 116px;
+    margin: 12px 0 54px 8px;
+    transform: rotate(-8deg);
+  }
+
+  .story-title-card h2 {
+    width: auto;
+    font-size: 24px;
+  }
+
+  .story-description {
+    position: static;
+    width: 100%;
     font-size: 16px;
   }
 
