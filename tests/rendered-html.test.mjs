@@ -24,6 +24,9 @@ test("ships the five-stage consensus journey", async () => {
   assert.match(page, /Choose as my favorite/);
   assert.match(page, /aria-pressed=\{favoriteChoice === option\.id\}/);
   assert.match(page, /snapshot\.privateState\?\.myFavorite \?\? current/);
+  assert.match(page, /Connect your bank with Plaid/);
+  assert.match(page, /openPaymentSheet/);
+  assert.match(page, /confirmPaymentApproval/);
   assert.match(page, /Works for me/);
   assert.match(page, /Too much/);
   assert.doesNotMatch(page, /Pick this option/);

@@ -7,6 +7,7 @@ import { MeshGradient } from "@paper-design/shaders-react";
 import {
   AirplaneTilt,
   ArrowsClockwise,
+  Bank,
   Bird,
   Butterfly,
   CalendarBlank,
@@ -54,6 +55,7 @@ type ComfortValue =
   | "maybe"
   | "skip";
 type UnfurlStatus = "idle" | "loading" | "success" | "fallback";
+type PaymentSheetStep = "connect" | "connecting" | "connected";
 type GroupClaim = {
   characterId: CharacterId;
   nickname: string;
@@ -527,6 +529,9 @@ function PrototypeLandingContent() {
   const [previewImageFailed, setPreviewImageFailed] = useState(false);
   const [previewEmbedFailed, setPreviewEmbedFailed] = useState(false);
   const [previewSheetOpen, setPreviewSheetOpen] = useState(false);
+  const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
+  const [paymentSheetStep, setPaymentSheetStep] =
+    useState<PaymentSheetStep>("connect");
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [activeOptionId, setActiveOptionId] = useState<string | null>(null);
   const [comfortChoice, setComfortChoice] =
@@ -538,6 +543,9 @@ function PrototypeLandingContent() {
   const optionTitleFieldRef = useRef<HTMLTextAreaElement>(null);
   const previewSheetRef = useRef<HTMLElement>(null);
   const previewReturnFocusRef = useRef<HTMLElement | null>(null);
+  const paymentSheetRef = useRef<HTMLElement>(null);
+  const paymentReturnFocusRef = useRef<HTMLElement | null>(null);
+  const bankConnectTimeoutRef = useRef<number | null>(null);
 
   const openPreviewSheet = useCallback(() => {
     previewReturnFocusRef.current =
@@ -550,6 +558,25 @@ function PrototypeLandingContent() {
   const closePreviewSheet = useCallback(() => {
     setPreviewSheetOpen(false);
     window.requestAnimationFrame(() => previewReturnFocusRef.current?.focus());
+  }, []);
+
+  const openPaymentSheet = useCallback(() => {
+    paymentReturnFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setPaymentSheetStep("connect");
+    setPaymentSheetOpen(true);
+  }, []);
+
+  const closePaymentSheet = useCallback(() => {
+    if (bankConnectTimeoutRef.current !== null) {
+      window.clearTimeout(bankConnectTimeoutRef.current);
+      bankConnectTimeoutRef.current = null;
+    }
+    setPaymentSheetOpen(false);
+    setPaymentSheetStep("connect");
+    window.requestAnimationFrame(() => paymentReturnFocusRef.current?.focus());
   }, []);
 
   const applySharedSnapshot = useCallback((snapshot: SharedGroupSnapshot) => {
@@ -704,17 +731,28 @@ function PrototypeLandingContent() {
   }, [currentGroupId, loadSharedGroup, sharedSnapshot?.joined]);
 
   useEffect(() => {
-    if (!previewSheetOpen) return;
+    const activeSheet = previewSheetOpen
+      ? {
+          close: closePreviewSheet,
+          ref: previewSheetRef,
+        }
+      : paymentSheetOpen
+        ? {
+            close: closePaymentSheet,
+            ref: paymentSheetRef,
+          }
+        : null;
+    if (!activeSheet) return;
 
     const handleDialogKeys = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        closePreviewSheet();
+        activeSheet.close();
         return;
       }
-      if (event.key !== "Tab" || !previewSheetRef.current) return;
+      if (event.key !== "Tab" || !activeSheet.ref.current) return;
 
       const focusable = Array.from(
-        previewSheetRef.current.querySelectorAll<HTMLElement>(
+        activeSheet.ref.current.querySelectorAll<HTMLElement>(
           'a[href], button:not([disabled]), input:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])',
         ),
       );
@@ -732,7 +770,20 @@ function PrototypeLandingContent() {
     };
     window.addEventListener("keydown", handleDialogKeys);
     return () => window.removeEventListener("keydown", handleDialogKeys);
-  }, [closePreviewSheet, previewSheetOpen]);
+  }, [
+    closePaymentSheet,
+    closePreviewSheet,
+    paymentSheetOpen,
+    previewSheetOpen,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (bankConnectTimeoutRef.current !== null) {
+        window.clearTimeout(bankConnectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (screen !== "confirm-option" || !optionTitleFieldRef.current) return;
@@ -1339,6 +1390,27 @@ function PrototypeLandingContent() {
     if (snapshot?.group.phase !== "booked") return;
     setBookingProcessing(true);
     window.setTimeout(() => setBookingProcessing(false), 1_100);
+  }
+
+  function startBankConnect() {
+    if (paymentSheetStep !== "connect") return;
+    setPaymentSheetStep("connecting");
+    if (bankConnectTimeoutRef.current !== null) {
+      window.clearTimeout(bankConnectTimeoutRef.current);
+    }
+    bankConnectTimeoutRef.current = window.setTimeout(
+      () => {
+        bankConnectTimeoutRef.current = null;
+        setPaymentSheetStep("connected");
+      },
+      reducedMotion ? 180 : 900,
+    );
+  }
+
+  async function confirmPaymentApproval() {
+    if (paymentSheetStep !== "connected" || sharedBusy) return;
+    await approveShare();
+    closePaymentSheet();
   }
 
   async function reopenCollection() {
@@ -2158,7 +2230,6 @@ function PrototypeLandingContent() {
                   <div className={styles.phasePanelIcon}>
                     <Check size={24} weight="bold" aria-hidden="true" />
                   </div>
-                  <p className={styles.eyebrow}>Consensus reached</p>
                   <h2>Approve your exact share.</h2>
                   <p>
                     Choosing a favorite did not authorize a charge. Review the
@@ -2180,7 +2251,7 @@ function PrototypeLandingContent() {
                   <button
                     className={styles.greenAction}
                     type="button"
-                    onClick={approveShare}
+                    onClick={openPaymentSheet}
                     disabled={hasApproved || sharedBusy}
                   >
                     {hasApproved ? "My share is approved" : "Approve my share"}
@@ -2531,78 +2602,53 @@ function PrototypeLandingContent() {
                 })}
               </fieldset>
 
-              <div className={styles.confirmFields}>
-                <fieldset className={styles.dateRangeField}>
-                  <legend>
-                    <CalendarBlank size={16} weight="bold" aria-hidden="true" />
-                    Dates
-                  </legend>
-                  <div>
-                    <label>
-                      <span>Check in</span>
-                      <input
-                        type="date"
-                        aria-invalid={draftDateRangeIncomplete}
-                        value={optionDraft.checkIn}
-                        onChange={(event) =>
-                          updateDraftDate("checkIn", event.target.value)
-                        }
-                      />
-                    </label>
-                    <label>
-                      <span>Check out</span>
-                      <input
-                        type="date"
-                        aria-invalid={draftDateRangeIncomplete}
-                        min={optionDraft.checkIn || undefined}
-                        value={optionDraft.checkOut}
-                        onChange={(event) =>
-                          updateDraftDate("checkOut", event.target.value)
-                        }
-                      />
-                    </label>
-                  </div>
-                  {!optionDraft.checkIn &&
-                    !optionDraft.checkOut &&
-                    optionDraft.dates && (
-                      <small>Saved dates: {optionDraft.dates}</small>
-                    )}
-                  {draftDateRangeIncomplete && (
-                    <small role="alert">
-                      Choose both check-in and check-out dates.
-                    </small>
-                  )}
-                </fieldset>
-
-                <div className={styles.readOnlyField}>
-                  <span>Sharing</span>
-                  <strong>
-                    {draftParticipants}{" "}
-                    {draftParticipants === 1 ? "person" : "people"}
-                  </strong>
+              <section
+                className={styles.dateRangeField}
+                aria-labelledby="option-dates-heading"
+              >
+                <div
+                  className={styles.dateRangeHeader}
+                  id="option-dates-heading"
+                >
+                  <CalendarBlank size={16} weight="bold" aria-hidden="true" />
+                  Dates
                 </div>
-
-                <label>
-                  <span>Travelers</span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    inputMode="numeric"
-                    value={optionDraft.sourceGuestCount ?? ""}
-                    onChange={(event) =>
-                      setOptionDraft((current) => ({
-                        ...current,
-                        sourceGuestCount:
-                          event.target.value === ""
-                            ? null
-                            : Number(event.target.value),
-                      }))
-                    }
-                    placeholder={String(groupDefaultTravelers)}
-                  />
-                </label>
-              </div>
+                <div className={styles.dateRangeInputs}>
+                  <label>
+                    <span>Check in</span>
+                    <input
+                      type="date"
+                      aria-invalid={draftDateRangeIncomplete}
+                      value={optionDraft.checkIn}
+                      onChange={(event) =>
+                        updateDraftDate("checkIn", event.target.value)
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>Check out</span>
+                    <input
+                      type="date"
+                      aria-invalid={draftDateRangeIncomplete}
+                      min={optionDraft.checkIn || undefined}
+                      value={optionDraft.checkOut}
+                      onChange={(event) =>
+                        updateDraftDate("checkOut", event.target.value)
+                      }
+                    />
+                  </label>
+                </div>
+                {!optionDraft.checkIn &&
+                  !optionDraft.checkOut &&
+                  optionDraft.dates && (
+                    <small>Saved dates: {optionDraft.dates}</small>
+                  )}
+                {draftDateRangeIncomplete && (
+                  <small role="alert">
+                    Choose both check-in and check-out dates.
+                  </small>
+                )}
+              </section>
 
               <section
                 className={styles.pricingPanel}
@@ -2812,6 +2858,124 @@ function PrototypeLandingContent() {
                 Save privately
               </button>
             </form>
+          </div>
+        )}
+
+        {paymentSheetOpen && (
+          <div
+            className={styles.previewSheetBackdrop}
+            onMouseDown={(event) => {
+              if (
+                event.target === event.currentTarget &&
+                paymentSheetStep !== "connecting"
+              ) {
+                closePaymentSheet();
+              }
+            }}
+          >
+            <section
+              ref={paymentSheetRef}
+              className={`${styles.previewSheet} ${styles.paymentSheet}`}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="payment-sheet-title"
+              aria-describedby="payment-sheet-copy"
+            >
+              <div className={styles.previewSheetHandle} aria-hidden="true" />
+              <header>
+                <span>Secure payment</span>
+                <button
+                  type="button"
+                  onClick={closePaymentSheet}
+                  aria-label="Close payment sheet"
+                  disabled={paymentSheetStep === "connecting" || sharedBusy}
+                >
+                  <X size={19} weight="bold" aria-hidden="true" />
+                </button>
+              </header>
+
+              <div className={styles.paymentSheetBody}>
+                <div
+                  className={styles.paymentHandshake}
+                  data-state={paymentSheetStep}
+                  aria-hidden="true"
+                >
+                  <span className={styles.paymentHandshakeMark}>
+                    <span>Q</span>
+                  </span>
+                  <span className={styles.paymentHandshakeDots}>
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                  <span className={styles.paymentHandshakeMark}>
+                    <Bank size={28} weight="bold" />
+                  </span>
+                </div>
+
+                <div className={styles.paymentSheetCopy}>
+                  <h2 id="payment-sheet-title">
+                    {paymentSheetStep === "connect"
+                      ? "Connect your bank with Plaid"
+                      : paymentSheetStep === "connecting"
+                        ? "Connecting…"
+                        : "Bank connected"}
+                  </h2>
+                  <p id="payment-sheet-copy">
+                    {paymentSheetStep === "connect"
+                      ? "Quorum uses a simulated Plaid link so everyone can pay the merchant directly. No one fronts the bill."
+                      : paymentSheetStep === "connecting"
+                        ? "Confirming a secure connection to your account."
+                        : `Review your exact share of ${currency(
+                            (myShare ?? 0) / 100,
+                          )} before approving.`}
+                  </p>
+                </div>
+
+                {paymentSheetStep === "connect" && (
+                  <button
+                    className={styles.greenAction}
+                    type="button"
+                    onClick={startBankConnect}
+                    autoFocus
+                  >
+                    Connect
+                  </button>
+                )}
+
+                {paymentSheetStep === "connecting" && (
+                  <p className={styles.paymentSheetStatus} role="status">
+                    Simulated Plaid handshake in progress
+                  </p>
+                )}
+
+                {paymentSheetStep === "connected" && (
+                  <>
+                    <p className={styles.paymentConnectedNote} role="status">
+                      <CheckCircle
+                        size={18}
+                        weight="fill"
+                        aria-hidden="true"
+                      />
+                      Connected
+                    </p>
+                    <button
+                      className={styles.greenAction}
+                      type="button"
+                      onClick={() => {
+                        void confirmPaymentApproval();
+                      }}
+                      disabled={sharedBusy}
+                      autoFocus
+                    >
+                      {sharedBusy
+                        ? "Approving…"
+                        : `Approve ${currency((myShare ?? 0) / 100)}`}
+                    </button>
+                  </>
+                )}
+              </div>
+            </section>
           </div>
         )}
 

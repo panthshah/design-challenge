@@ -1486,7 +1486,8 @@
 
 .confirmFields {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex-shrink: 0;
+  grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid rgba(22, 21, 17, 0.18);
   border-radius: 12px;
@@ -1501,11 +1502,6 @@
   align-content: center;
   padding: 14px 16px;
   gap: 8px;
-  border-top: 1px solid rgba(22, 21, 17, 0.14);
-}
-
-.confirmFields > label {
-  border-left: 1px solid rgba(22, 21, 17, 0.14);
 }
 
 .confirmFields > label > span,
@@ -1526,18 +1522,19 @@
 
 .dateRangeField {
   display: grid;
+  flex-shrink: 0;
   min-width: 0;
   margin: 0;
-  padding: 16px;
-  border: 0;
-  grid-column: 1 / -1;
-  gap: 14px;
+  padding: 14px;
+  gap: 12px;
+  border: 1px solid rgba(22, 21, 17, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.52);
 }
 
-.dateRangeField legend {
+.dateRangeHeader {
   display: flex;
   align-items: center;
-  padding: 0;
   gap: 5px;
   color: #6e6458;
   font-size: 10px;
@@ -1546,22 +1543,31 @@
   text-transform: uppercase;
 }
 
-.dateRangeField > div {
+.dateRangeInputs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: 10px;
 }
 
 .dateRangeField label {
   display: grid;
   min-width: 0;
-  gap: 7px;
+  min-height: 72px;
+  align-content: center;
+  padding: 12px;
+  gap: 8px;
+  border: 1px solid rgba(22, 21, 17, 0.18);
+  border-radius: 8px;
+  background: #fffbea;
 }
 
 .dateRangeField label span {
   color: #6e6458;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .dateRangeField small {
@@ -1595,8 +1601,39 @@
   color: #161511;
 }
 
+.dateRangeField label:focus-within {
+  border-color: #161511;
+  box-shadow: 0 0 0 3px rgba(22, 21, 17, 0.1);
+}
+
+.dateRangeField input {
+  width: 100%;
+  min-width: 0;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1.2;
+  color-scheme: light;
+}
+
+.dateRangeField input::-webkit-calendar-picker-indicator {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  opacity: 0.72;
+}
+
 .pricingPanel {
   display: grid;
+  flex-shrink: 0;
   padding: 16px;
   border: 1px solid oklch(0.76 0.035 104 / 0.5);
   border-radius: 12px;
@@ -1980,6 +2017,144 @@
   from {
     opacity: 0;
     transform: translateY(24px);
+  }
+}
+
+.paymentSheet {
+  max-height: 78%;
+}
+
+.paymentSheetBody {
+  display: grid;
+  padding: 28px 8px 8px;
+  gap: 22px;
+  justify-items: center;
+  text-align: center;
+}
+
+.paymentHandshake {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+.paymentHandshakeMark {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  border-radius: 50%;
+  background: #fffdf6;
+  color: #161511;
+  box-shadow:
+    0 10px 24px rgba(37, 32, 23, 0.08),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  outline: 1px solid rgba(0, 0, 0, 0.1);
+  outline-offset: -1px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.paymentHandshakeMark:last-child {
+  background: #0a2540;
+  color: #ffffff;
+  outline-color: rgba(0, 0, 0, 0.1);
+}
+
+.paymentHandshakeDots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.paymentHandshakeDots > i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(22, 21, 17, 0.28);
+}
+
+.paymentHandshake[data-state="connecting"] .paymentHandshakeDots > i {
+  animation: payment-dot-pulse 900ms linear infinite;
+}
+
+.paymentHandshake[data-state="connecting"] .paymentHandshakeDots > i:nth-child(2) {
+  animation-delay: 150ms;
+}
+
+.paymentHandshake[data-state="connecting"] .paymentHandshakeDots > i:nth-child(3) {
+  animation-delay: 300ms;
+}
+
+.paymentHandshake[data-state="connected"] .paymentHandshakeDots > i {
+  background: #2d704c;
+}
+
+.paymentSheetCopy {
+  display: grid;
+  max-width: 28ch;
+  gap: 10px;
+  transition-property: opacity, filter;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
+.paymentSheetCopy h2,
+.paymentSheetCopy p {
+  margin: 0;
+  text-wrap: balance;
+}
+
+.paymentSheetCopy h2 {
+  font-size: 28px;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+
+.paymentSheetCopy p {
+  color: #5f574c;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.paymentSheetBody > .greenAction {
+  width: min(100%, 280px);
+}
+
+.paymentSheetStatus {
+  margin: 0;
+  color: #6e6458;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.paymentConnectedNote {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 8px 12px;
+  gap: 6px;
+  border-radius: 999px;
+  background: #e8efd0;
+  color: #18331d;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@keyframes payment-dot-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
@@ -3043,6 +3218,15 @@
   .previewSheetBackdrop,
   .previewSheet {
     animation: none;
+  }
+
+  .paymentHandshake[data-state="connecting"] .paymentHandshakeDots > i {
+    animation: none;
+    opacity: 0.72;
+  }
+
+  .paymentSheetCopy {
+    transition: none;
   }
 
   .bookingProcessing > span {
