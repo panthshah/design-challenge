@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { useSearchParams } from "next/navigation";
 import { MeshGradient } from "@paper-design/shaders-react";
@@ -453,7 +453,7 @@ function ShaderCardBackdrop({
   );
 }
 
-export default function PrototypeLanding() {
+function PrototypeLandingContent() {
   const searchParams = useSearchParams();
   const deepLinkedGroupId = searchParams.get("invite");
   const deepLinked = Boolean(deepLinkedGroupId);
@@ -2706,5 +2706,15 @@ export default function PrototypeLanding() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function PrototypeLanding() {
+  return (
+    <Suspense
+      fallback={<main className={styles.stage} aria-label="Loading prototype" />}
+    >
+      <PrototypeLandingContent />
+    </Suspense>
   );
 }
