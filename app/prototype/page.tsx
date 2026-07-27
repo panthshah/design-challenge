@@ -140,11 +140,14 @@ type ImportedOption = {
   sourceUrl: string;
   description: string | null;
   officialEmbedHtml: string | null;
+  embedUrl: string | null;
   sourceGuestCount: number | null;
 };
 
 type OptionDraft = ImportedOption & {
   category: OptionCategory;
+  checkIn: string;
+  checkOut: string;
   dates: string;
   allInTotal: string;
   participantCount: string;
@@ -162,9 +165,12 @@ type UnfurlResponse = {
     price: number | null;
     siteName: string | null;
     sourceLabel: string;
+    checkIn: string | null;
+    checkOut: string | null;
     dates: string | null;
     guestCount: number | null;
     officialEmbedHtml: string | null;
+    embedUrl: string | null;
     fallback: boolean;
   };
 };
@@ -285,8 +291,11 @@ const emptyDraft: OptionDraft = {
   sourceUrl: "",
   description: null,
   officialEmbedHtml: null,
+  embedUrl: null,
   sourceGuestCount: null,
   category: "stay",
+  checkIn: "",
+  checkOut: "",
   dates: "",
   allInTotal: "",
   participantCount: "1",
@@ -328,37 +337,10 @@ function getGroupVibe(vibeIndex: number | null | undefined) {
   return typeof vibeIndex === "number" ? groupVibes[vibeIndex] : null;
 }
 
-function titleFromUrl(url: URL) {
-  const ignored = new Set([
-    "rooms",
-    "hotel",
-    "hotels",
-    "listing",
-    "property",
-    "stays",
-  ]);
-  const candidate = url.pathname
-    .split("/")
-    .filter(Boolean)
-    .reverse()
-    .find(
-      (segment) =>
-        !ignored.has(segment.toLowerCase()) &&
-        !/^\d+$/.test(segment) &&
-        segment.length > 2,
-    );
-
-  if (!candidate) return null;
-
-  try {
-    return decodeURIComponent(candidate)
-      .replace(/\.[a-z0-9]+$/i, "")
-      .replace(/[-_+]+/g, " ")
-      .replace(/\b\w/g, (letter) => letter.toUpperCase())
-      .trim();
-  } catch {
-    return null;
-  }
+function hostDisplayName(url: URL) {
+  return (url.hostname.replace(/^www\./, "").split(".")[0] || "website")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function parseImportedOption(value: string): ImportedOption | null {
@@ -375,11 +357,12 @@ function parseImportedOption(value: string): ImportedOption | null {
       return {
         provider: importMatch.provider,
         sourceType: importMatch.sourceType,
-        title: titleFromUrl(url) ?? importMatch.title,
+        title: importMatch.title,
         imageUrl: null,
         sourceUrl: url.toString(),
         description: null,
         officialEmbedHtml: null,
+        embedUrl: null,
         sourceGuestCount: null,
       };
     }
@@ -387,11 +370,12 @@ function parseImportedOption(value: string): ImportedOption | null {
     return {
       provider: url.hostname.replace(/^www\./, ""),
       sourceType: "WEBSITE",
-      title: titleFromUrl(url) ?? "Trip option",
+      title: `Trip option from ${hostDisplayName(url)}`,
       imageUrl: null,
       sourceUrl: url.toString(),
       description: null,
       officialEmbedHtml: null,
+      embedUrl: null,
       sourceGuestCount: null,
     };
   } catch {
@@ -406,6 +390,32 @@ function currency(value: number) {
     maximumFractionDigits: 0,
     minimumFractionDigits: 0,
   }).format(value);
+}
+
+function formatOptionDates(checkIn: string, checkOut: string) {
+  const format = (value: string) => {
+    if (!value) return "";
+    const date = new Date(`${value}T00:00:00Z`);
+    if (Number.isNaN(date.valueOf())) return "";
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    }).format(date);
+  };
+
+  const start = format(checkIn);
+  const end = format(checkOut);
+  return start && end ? `${start}–${end}` : start || end;
+}
+
+function limitOptionTitle(value: string, maxLength = 56) {
+  if (value.length <= maxLength) return value;
+  const clipped = value.slice(0, maxLength - 1);
+  const lastSpace = clipped.lastIndexOf(" ");
+  const cleanClip =
+    lastSpace >= maxLength * 0.65 ? clipped.slice(0, lastSpace) : clipped;
+  return `${cleanClip.trim()}…`;
 }
 
 function checkedTimestamp(value: string) {
@@ -499,6 +509,7 @@ function PrototypeLandingContent() {
     useState<UnfurlStatus>("idle");
   const [unfurlSourceUrl, setUnfurlSourceUrl] = useState("");
   const [previewImageFailed, setPreviewImageFailed] = useState(false);
+  const [previewEmbedFailed, setPreviewEmbedFailed] = useState(false);
   const [previewSheetOpen, setPreviewSheetOpen] = useState(false);
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [activeOptionId, setActiveOptionId] = useState<string | null>(null);
@@ -508,6 +519,22 @@ function PrototypeLandingContent() {
   const [costDetailsOpen, setCostDetailsOpen] = useState(false);
   const [archivePendingId, setArchivePendingId] = useState<string | null>(null);
   const unfurlRequestId = useRef(0);
+  const optionTitleFieldRef = useRef<HTMLTextAreaElement>(null);
+  const previewSheetRef = useRef<HTMLElement>(null);
+  const previewReturnFocusRef = useRef<HTMLElement | null>(null);
+
+  const openPreviewSheet = useCallback(() => {
+    previewReturnFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setPreviewSheetOpen(true);
+  }, []);
+
+  const closePreviewSheet = useCallback(() => {
+    setPreviewSheetOpen(false);
+    window.requestAnimationFrame(() => previewReturnFocusRef.current?.focus());
+  }, []);
 
   const applySharedSnapshot = useCallback((snapshot: SharedGroupSnapshot) => {
     setSharedSnapshot(snapshot);
@@ -659,12 +686,40 @@ function PrototypeLandingContent() {
   useEffect(() => {
     if (!previewSheetOpen) return;
 
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPreviewSheetOpen(false);
+    const handleDialogKeys = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closePreviewSheet();
+        return;
+      }
+      if (event.key !== "Tab" || !previewSheetRef.current) return;
+
+      const focusable = Array.from(
+        previewSheetRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (!first || !last) return;
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [previewSheetOpen]);
+    window.addEventListener("keydown", handleDialogKeys);
+    return () => window.removeEventListener("keydown", handleDialogKeys);
+  }, [closePreviewSheet, previewSheetOpen]);
+
+  useEffect(() => {
+    if (screen !== "confirm-option" || !optionTitleFieldRef.current) return;
+    const field = optionTitleFieldRef.current;
+    field.style.height = "0";
+    field.style.height = `${field.scrollHeight}px`;
+  }, [optionDraft.title, screen]);
 
   const claimedNicknames = new Set(
     activeGroup?.claims.map((claim) => claim.nickname.toLowerCase()) ?? [],
@@ -690,6 +745,9 @@ function PrototypeLandingContent() {
   const SelectedCharacterIcon = selectedCharacterOption.Icon;
   const displayedNickname = identityNickname ?? groupAlias;
   const groupOptions = activeGroup?.options ?? [];
+  const groupDefaultDates =
+    groupOptions.find((option) => option.dates.trim())?.dates ?? "";
+  const groupDefaultTravelers = Math.max(activeGroup?.memberCount ?? 1, 1);
   const activeOption =
     groupOptions.find((option) => option.id === activeOptionId) ?? null;
   const currentMemberNickname = displayedNickname || "Window Seat";
@@ -702,9 +760,12 @@ function PrototypeLandingContent() {
     draftParticipants > 0
       ? draftTotal / draftParticipants
       : 0;
+  const draftDateRangeIncomplete =
+    Boolean(optionDraft.checkIn) !== Boolean(optionDraft.checkOut);
   const optionDraftValid =
     Boolean(optionDraft.title.trim()) &&
     Boolean(optionDraft.dates.trim()) &&
+    !draftDateRangeIncomplete &&
     draftShare > 0 &&
     unfurlStatus !== "loading";
   const appThemeStyle = {
@@ -723,6 +784,7 @@ function PrototypeLandingContent() {
   function startPath(path: EntryPath) {
     setEntryPath(path);
     setCopied(false);
+    setSharedError(null);
     setIdentityNickname(null);
 
     if (path === "create") {
@@ -834,8 +896,12 @@ function PrototypeLandingContent() {
 
   async function showJoinPreview() {
     const groupId = parseInviteGroupId(inviteCode);
-    if (!groupId) return;
+    if (!groupId) {
+      setSharedError("Paste a valid invite link or group code.");
+      return;
+    }
 
+    setSharedError(null);
     const snapshot = await loadSharedGroup(groupId);
     if (!snapshot) return;
     if (snapshot.joined) {
@@ -917,11 +983,23 @@ function PrototypeLandingContent() {
     setUnfurlStatus("loading");
     setOptionImportError(null);
     setPreviewImageFailed(false);
-    setOptionDraft((current) => ({
-      ...current,
-      ...fallback,
-      participantCount: String(Math.max(activeGroup?.memberCount ?? 1, 1)),
-    }));
+    setPreviewEmbedFailed(false);
+    setOptionDraft((current) => {
+      const newSource = current.sourceUrl !== fallback.sourceUrl;
+      return {
+        ...current,
+        ...fallback,
+        sourceGuestCount: newSource
+          ? groupDefaultTravelers
+          : (current.sourceGuestCount ?? groupDefaultTravelers),
+        dates: newSource
+          ? groupDefaultDates
+          : current.dates || groupDefaultDates,
+        checkIn: newSource ? "" : current.checkIn,
+        checkOut: newSource ? "" : current.checkOut,
+        participantCount: String(groupDefaultTravelers),
+      };
+    });
 
     try {
       const response = await fetch(
@@ -948,20 +1026,24 @@ function PrototypeLandingContent() {
           sourceType: metadata.sourceLabel || fallback.sourceType,
           title:
             canReplaceTitle && metadata.title
-              ? metadata.title
+              ? limitOptionTitle(metadata.title)
               : current.title || fallback.title,
           imageUrl: metadata.image,
           sourceUrl: fallback.sourceUrl,
           description: metadata.description,
           officialEmbedHtml: metadata.officialEmbedHtml,
-          sourceGuestCount: metadata.guestCount,
-          dates: metadata.dates ?? current.dates,
+          embedUrl: metadata.embedUrl,
+          sourceGuestCount:
+            metadata.guestCount ??
+            current.sourceGuestCount ??
+            groupDefaultTravelers,
+          checkIn: metadata.checkIn ?? current.checkIn,
+          checkOut: metadata.checkOut ?? current.checkOut,
+          dates: metadata.dates ?? (current.dates || groupDefaultDates),
           allInTotal:
             current.allInTotal ||
             (metadata.price ? String(Math.round(metadata.price)) : ""),
-          participantCount: String(
-            Math.max(activeGroup?.memberCount ?? 1, 1),
-          ),
+          participantCount: String(groupDefaultTravelers),
         };
       });
       setUnfurlStatus(metadata.fallback ? "fallback" : "success");
@@ -972,6 +1054,19 @@ function PrototypeLandingContent() {
     }
   }
 
+  function updateDraftDate(field: "checkIn" | "checkOut", value: string) {
+    setOptionDraft((current) => {
+      const checkIn = field === "checkIn" ? value : current.checkIn;
+      const checkOut = field === "checkOut" ? value : current.checkOut;
+      return {
+        ...current,
+        checkIn,
+        checkOut,
+        dates: formatOptionDates(checkIn, checkOut),
+      };
+    });
+  }
+
   function startAddingOption() {
     if (!activeGroup || activeGroup.options.length >= maxActiveOptions) return;
 
@@ -980,11 +1075,14 @@ function PrototypeLandingContent() {
     setOptionImportError(null);
     setOptionDraft({
       ...emptyDraft,
-      participantCount: String(Math.max(activeGroup.memberCount, 1)),
+      sourceGuestCount: groupDefaultTravelers,
+      dates: groupDefaultDates,
+      participantCount: String(groupDefaultTravelers),
     });
     setUnfurlStatus("idle");
     setUnfurlSourceUrl("");
     setPreviewImageFailed(false);
+    setPreviewEmbedFailed(false);
     setPreviewSheetOpen(false);
     setEditingOptionId(null);
     setCostDetailsOpen(false);
@@ -1007,9 +1105,9 @@ function PrototypeLandingContent() {
         : {
             ...emptyDraft,
             ...imported,
-            participantCount: String(
-              Math.max(activeGroup?.memberCount ?? 1, 1),
-            ),
+            sourceGuestCount: groupDefaultTravelers,
+            dates: groupDefaultDates,
+            participantCount: String(groupDefaultTravelers),
           },
     );
     setCostDetailsOpen(false);
@@ -1030,13 +1128,16 @@ function PrototypeLandingContent() {
     setOptionDraft({
       provider: option.provider,
       sourceType: option.sourceType,
-      title: option.title,
+      title: limitOptionTitle(option.title),
       imageUrl: option.imageUrl,
       sourceUrl: option.sourceUrl,
       description: option.description,
       officialEmbedHtml: option.officialEmbedHtml,
+      embedUrl: null,
       sourceGuestCount: option.sourceGuestCount,
       category: option.category,
+      checkIn: "",
+      checkOut: "",
       dates: option.dates,
       allInTotal: String(option.allInTotal),
       participantCount: String(option.participantCount),
@@ -1048,6 +1149,7 @@ function PrototypeLandingContent() {
     setUnfurlStatus("success");
     setUnfurlSourceUrl(option.sourceUrl);
     setPreviewImageFailed(false);
+    setPreviewEmbedFailed(false);
     setPreviewSheetOpen(false);
     setCostDetailsOpen(false);
     setScreen("confirm-option");
@@ -1057,13 +1159,16 @@ function PrototypeLandingContent() {
     setOptionDraft({
       provider: option.provider,
       sourceType: option.sourceType,
-      title: option.title,
+      title: limitOptionTitle(option.title),
       imageUrl: option.imageUrl,
       sourceUrl: option.sourceUrl,
       description: option.description,
       officialEmbedHtml: option.officialEmbedHtml,
+      embedUrl: null,
       sourceGuestCount: option.sourceGuestCount,
       category: option.category,
+      checkIn: "",
+      checkOut: "",
       dates: option.dates,
       allInTotal: String(option.allInTotal),
       participantCount: String(option.participantCount),
@@ -1072,7 +1177,8 @@ function PrototypeLandingContent() {
       taxes: option.taxes === null ? "" : String(option.taxes),
     });
     setPreviewImageFailed(false);
-    setPreviewSheetOpen(true);
+    setPreviewEmbedFailed(false);
+    openPreviewSheet();
   }
 
   async function saveOptionForReview() {
@@ -1418,11 +1524,12 @@ function PrototypeLandingContent() {
 
             <form
               className={styles.formScreen}
+              aria-busy={sharedBusy}
               onSubmit={(event) => {
                 event.preventDefault();
 
                 if (!joinPreviewVisible) {
-                  showJoinPreview();
+                  void showJoinPreview();
                   return;
                 }
 
@@ -1446,12 +1553,19 @@ function PrototypeLandingContent() {
                     setJoinPreviewVisible(false);
                     setCurrentGroupId(null);
                     setActiveGroup(null);
+                    setSharedError(null);
                   }}
                   placeholder="quorum.app/join/…"
                   aria-describedby="join-helper"
                   autoFocus={!deepLinked}
                 />
               </label>
+
+              {sharedError && (
+                <p className={styles.identityError} role="alert">
+                  {sharedError}
+                </p>
+              )}
 
               {joinPreviewVisible && (
                 <section
@@ -1482,9 +1596,13 @@ function PrototypeLandingContent() {
               <button
                 className={styles.greenAction}
                 type="submit"
-                disabled={!inviteCode.trim()}
+                disabled={!inviteCode.trim() || sharedBusy}
               >
-                {joinPreviewVisible ? "Choose your identity" : "Preview group"}
+                {sharedBusy
+                  ? "Finding group…"
+                  : joinPreviewVisible
+                    ? "Choose your identity"
+                    : "Preview group"}
               </button>
 
               <p className={styles.actionNote} id="join-helper">
@@ -2208,7 +2326,7 @@ function PrototypeLandingContent() {
                   className={`${styles.importCard} ${styles.previewMini} ${styles.previewTrigger}`}
                   aria-label="Listing preview"
                   type="button"
-                  onClick={() => setPreviewSheetOpen(true)}
+                  onClick={openPreviewSheet}
                 >
                   {optionDraft.imageUrl && !previewImageFailed ? (
                     <img
@@ -2289,7 +2407,13 @@ function PrototypeLandingContent() {
                   </div>
                 </section>
               ) : (
-                <section className={styles.importCard}>
+                <section
+                  className={`${styles.importCard} ${
+                    !optionDraft.imageUrl || previewImageFailed
+                      ? styles.importCardNoImage
+                      : ""
+                  }`}
+                >
                   {optionDraft.imageUrl && !previewImageFailed ? (
                     <img
                       src={optionDraft.imageUrl}
@@ -2315,16 +2439,18 @@ function PrototypeLandingContent() {
                     </div>
                     <label>
                       <span className={styles.srOnly}>Option title</span>
-                      <input
+                      <textarea
+                        ref={optionTitleFieldRef}
+                        rows={1}
                         value={optionDraft.title}
                         onChange={(event) =>
                           setOptionDraft((current) => ({
                             ...current,
-                            title: event.target.value,
+                            title: limitOptionTitle(event.target.value),
                           }))
                         }
                         placeholder="Name this option"
-                        maxLength={64}
+                        maxLength={56}
                       />
                     </label>
                   </div>
@@ -2374,22 +2500,47 @@ function PrototypeLandingContent() {
               </fieldset>
 
               <div className={styles.confirmFields}>
-                <label>
-                  <span>
+                <fieldset className={styles.dateRangeField}>
+                  <legend>
                     <CalendarBlank size={16} weight="bold" aria-hidden="true" />
                     Dates
-                  </span>
-                  <input
-                    value={optionDraft.dates}
-                    onChange={(event) =>
-                      setOptionDraft((current) => ({
-                        ...current,
-                        dates: event.target.value,
-                      }))
-                    }
-                    placeholder="Oct 10–13"
-                  />
-                </label>
+                  </legend>
+                  <div>
+                    <label>
+                      <span>Check in</span>
+                      <input
+                        type="date"
+                        aria-invalid={draftDateRangeIncomplete}
+                        value={optionDraft.checkIn}
+                        onChange={(event) =>
+                          updateDraftDate("checkIn", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label>
+                      <span>Check out</span>
+                      <input
+                        type="date"
+                        aria-invalid={draftDateRangeIncomplete}
+                        min={optionDraft.checkIn || undefined}
+                        value={optionDraft.checkOut}
+                        onChange={(event) =>
+                          updateDraftDate("checkOut", event.target.value)
+                        }
+                      />
+                    </label>
+                  </div>
+                  {!optionDraft.checkIn &&
+                    !optionDraft.checkOut &&
+                    optionDraft.dates && (
+                      <small>Saved dates: {optionDraft.dates}</small>
+                    )}
+                  {draftDateRangeIncomplete && (
+                    <small role="alert">
+                      Choose both check-in and check-out dates.
+                    </small>
+                  )}
+                </fieldset>
 
                 <div className={styles.readOnlyField}>
                   <span>
@@ -2401,79 +2552,116 @@ function PrototypeLandingContent() {
                     {draftParticipants === 1 ? "person" : "people"}
                   </strong>
                 </div>
-              </div>
 
-              <label className={styles.totalField}>
-                <span>Total including mandatory fees</span>
-                <span className={styles.moneyInput}>
-                  <span aria-hidden="true">$</span>
+                <label>
+                  <span>
+                    <UsersThree size={16} weight="bold" aria-hidden="true" />
+                    Travelers
+                  </span>
                   <input
                     type="number"
                     min="1"
-                    step="0.01"
-                    inputMode="decimal"
-                    value={optionDraft.allInTotal}
+                    max="100"
+                    inputMode="numeric"
+                    value={optionDraft.sourceGuestCount ?? ""}
                     onChange={(event) =>
                       setOptionDraft((current) => ({
                         ...current,
-                        allInTotal: event.target.value,
+                        sourceGuestCount:
+                          event.target.value === ""
+                            ? null
+                            : Number(event.target.value),
                       }))
                     }
-                    placeholder="1860"
+                    placeholder={String(groupDefaultTravelers)}
                   />
-                </span>
-              </label>
+                </label>
+              </div>
 
-              <section className={styles.shareCalculation} aria-live="polite">
-                <div>
-                  <span>Your current share</span>
-                  <strong>{draftShare > 0 ? currency(draftShare) : "—"}</strong>
-                </div>
-                <p>
-                  {draftShare > 0
-                    ? `Each if ${draftParticipants} ${
-                        draftParticipants === 1 ? "person is" : "people are"
-                      } sharing.`
-                    : "Add the total to calculate everyone’s share."}
-                </p>
-              </section>
-
-              <details
-                className={styles.costDetails}
-                open={costDetailsOpen}
-                onToggle={(event) =>
-                  setCostDetailsOpen(event.currentTarget.open)
-                }
+              <section
+                className={styles.pricingPanel}
+                aria-labelledby="option-price-heading"
               >
-                <summary>Optional cost breakdown</summary>
-                <div>
-                  {[
-                    ["Base price", "basePrice"],
-                    ["Fees", "fees"],
-                    ["Taxes", "taxes"],
-                  ].map(([label, key]) => (
-                    <label key={key}>
-                      <span>{label}</span>
-                      <span className={styles.smallMoneyInput}>
-                        <span aria-hidden="true">$</span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          inputMode="decimal"
-                          value={optionDraft[key as keyof OptionDraft] ?? ""}
-                          onChange={(event) =>
-                            setOptionDraft((current) => ({
-                              ...current,
-                              [key]: event.target.value,
-                            }))
-                          }
-                        />
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </details>
+                <p className={styles.pricingEyebrow} id="option-price-heading">
+                  Price
+                </p>
+                <label className={styles.totalField}>
+                  <span>Total including mandatory fees</span>
+                  <span className={styles.moneyInput}>
+                    <span aria-hidden="true">$</span>
+                    <input
+                      type="number"
+                      min="1"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={optionDraft.allInTotal}
+                      onChange={(event) =>
+                        setOptionDraft((current) => ({
+                          ...current,
+                          allInTotal: event.target.value,
+                        }))
+                      }
+                      placeholder="1860"
+                    />
+                  </span>
+                </label>
+
+                <section
+                  className={styles.shareCalculation}
+                  aria-live="polite"
+                >
+                  <div>
+                    <span>Your current share</span>
+                    <strong>
+                      {draftShare > 0 ? currency(draftShare) : "—"}
+                    </strong>
+                  </div>
+                  <p>
+                    {draftShare > 0
+                      ? `Each if ${draftParticipants} ${
+                          draftParticipants === 1 ? "person is" : "people are"
+                        } sharing.`
+                      : "Add the total to calculate everyone’s share."}
+                  </p>
+                </section>
+
+                <details
+                  className={styles.costDetails}
+                  open={costDetailsOpen}
+                  onToggle={(event) =>
+                    setCostDetailsOpen(event.currentTarget.open)
+                  }
+                >
+                  <summary>Optional cost breakdown</summary>
+                  <div>
+                    {[
+                      ["Base price", "basePrice"],
+                      ["Fees", "fees"],
+                      ["Taxes", "taxes"],
+                    ].map(([label, key]) => (
+                      <label key={key}>
+                        <span>{label}</span>
+                        <span className={styles.smallMoneyInput}>
+                          <span aria-hidden="true">$</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            inputMode="decimal"
+                            value={optionDraft[key as keyof OptionDraft] ?? ""}
+                            onChange={(event) =>
+                              setOptionDraft((current) => ({
+                                ...current,
+                                [key]: event.target.value,
+                              }))
+                            }
+                          />
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </details>
+              </section>
 
               <p className={styles.checkedNote}>
                 <CheckCircle size={16} weight="fill" aria-hidden="true" />
@@ -2602,11 +2790,12 @@ function PrototypeLandingContent() {
             className={styles.previewSheetBackdrop}
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
-                setPreviewSheetOpen(false);
+                closePreviewSheet();
               }
             }}
           >
             <section
+              ref={previewSheetRef}
               className={styles.previewSheet}
               role="dialog"
               aria-modal="true"
@@ -2617,7 +2806,7 @@ function PrototypeLandingContent() {
                 <span>{optionDraft.sourceType}</span>
                 <button
                   type="button"
-                  onClick={() => setPreviewSheetOpen(false)}
+                  onClick={closePreviewSheet}
                   aria-label="Close listing preview"
                   autoFocus
                 >
@@ -2631,6 +2820,14 @@ function PrototypeLandingContent() {
                   title={`${optionDraft.provider} official listing preview`}
                   srcDoc={optionDraft.officialEmbedHtml}
                   sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                />
+              ) : optionDraft.embedUrl && !previewEmbedFailed ? (
+                <iframe
+                  className={`${styles.officialEmbed} ${styles.interactiveEmbed}`}
+                  title={`${optionDraft.provider} interactive website preview`}
+                  src={optionDraft.embedUrl}
+                  sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+                  onError={() => setPreviewEmbedFailed(true)}
                 />
               ) : optionDraft.imageUrl && !previewImageFailed ? (
                 <img
@@ -2661,7 +2858,19 @@ function PrototypeLandingContent() {
                 <dl>
                   <div>
                     <dt>Dates</dt>
-                    <dd>{optionDraft.dates || "Add dates"}</dd>
+                    <dd>
+                      <input
+                        aria-label="Trip dates"
+                        value={optionDraft.dates}
+                        onChange={(event) =>
+                          setOptionDraft((current) => ({
+                            ...current,
+                            dates: event.target.value,
+                          }))
+                        }
+                        placeholder="Add dates"
+                      />
+                    </dd>
                   </div>
                   <div>
                     <dt>Group</dt>
@@ -2670,25 +2879,36 @@ function PrototypeLandingContent() {
                       {draftParticipants === 1 ? "person" : "people"}
                     </dd>
                   </div>
-                  {optionDraft.sourceGuestCount && (
-                    <div>
-                      <dt>Listing</dt>
-                      <dd>{optionDraft.sourceGuestCount} guests</dd>
-                    </div>
-                  )}
+                  <div>
+                    <dt>Travelers</dt>
+                    <dd className={styles.previewTravelerValue}>
+                      <input
+                        aria-label="Traveler count"
+                        type="number"
+                        min="1"
+                        max="100"
+                        inputMode="numeric"
+                        value={optionDraft.sourceGuestCount ?? ""}
+                        onChange={(event) =>
+                          setOptionDraft((current) => ({
+                            ...current,
+                            sourceGuestCount:
+                              event.target.value === ""
+                                ? null
+                                : Number(event.target.value),
+                          }))
+                        }
+                        placeholder={String(groupDefaultTravelers)}
+                      />
+                      <span>
+                        {(optionDraft.sourceGuestCount ??
+                          groupDefaultTravelers) === 1
+                          ? "guest"
+                          : "guests"}
+                      </span>
+                    </dd>
+                  </div>
                 </dl>
-
-                <section className={styles.previewSheetShare}>
-                  <span>Current share</span>
-                  <strong>{draftShare > 0 ? currency(draftShare) : "—"}</strong>
-                  <p>
-                    {draftShare > 0
-                      ? `Based on ${draftParticipants} current group ${
-                          draftParticipants === 1 ? "member" : "members"
-                        }.`
-                      : "Add the human-confirmed total on the next step."}
-                  </p>
-                </section>
 
                 <a
                   className={styles.previewSheetLink}

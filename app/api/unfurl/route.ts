@@ -14,10 +14,18 @@ type SourceLabel =
   | "WEBSITE";
 
 type SiteEnrichment = {
+  checkIn: string | null;
+  checkOut: string | null;
   dates: string | null;
   guestCount: number | null;
   price: number | null;
   officialEmbedHtml: string | null;
+};
+
+type StructuredMetadata = {
+  title: string | null;
+  image: string | null;
+  description: string | null;
 };
 
 type UnfurlMetadata = {
@@ -26,16 +34,21 @@ type UnfurlMetadata = {
   description: string | null;
   siteName: string | null;
   sourceLabel: SourceLabel;
+  checkIn: string | null;
+  checkOut: string | null;
   dates: string | null;
   guestCount: number | null;
   price: number | null;
   officialEmbedHtml: string | null;
+  embedUrl: string | null;
   fallback: boolean;
 };
 
 type SiteEnricher = (url: URL, html: string) => SiteEnrichment;
 
 const emptyEnrichment: SiteEnrichment = {
+  checkIn: null,
+  checkOut: null,
   dates: null,
   guestCount: null,
   price: null,
@@ -98,6 +111,80 @@ function getMeta(html: string) {
   }
 
   return values;
+}
+
+function structuredTypeMatches(value: unknown) {
+  const types = Array.isArray(value) ? value : [value];
+  return types.some(
+    (type) =>
+      typeof type === "string" &&
+      /^(hotel|lodgingbusiness|resort|motel|bedandbreakfast|accommodation|product)$/i.test(
+        type.split(/[\/#]/).at(-1) ?? "",
+      ),
+  );
+}
+
+function structuredImage(value: unknown, baseUrl: URL) {
+  const candidates = Array.isArray(value) ? value : [value];
+
+  for (const candidate of candidates) {
+    const source =
+      typeof candidate === "string"
+        ? candidate
+        : candidate && typeof candidate === "object"
+          ? String(
+              (candidate as Record<string, unknown>).url ??
+                (candidate as Record<string, unknown>).contentUrl ??
+                "",
+            )
+          : "";
+    const resolved = resolveImage(source || null, baseUrl);
+    if (resolved) return resolved;
+  }
+
+  return null;
+}
+
+function getStructuredMetadata(html: string, baseUrl: URL): StructuredMetadata {
+  const scripts =
+    html.match(
+      /<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi,
+    ) ?? [];
+  const entries: Record<string, unknown>[] = [];
+
+  const visit = (value: unknown) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+
+    const object = value as Record<string, unknown>;
+    if (structuredTypeMatches(object["@type"])) entries.push(object);
+    if (object["@graph"]) visit(object["@graph"]);
+  };
+
+  for (const script of scripts) {
+    const body = script
+      .replace(/^<script\b[^>]*>/i, "")
+      .replace(/<\/script>$/i, "")
+      .trim();
+    try {
+      visit(JSON.parse(body));
+    } catch {
+      // Invalid structured data should not prevent the generic fallback.
+    }
+  }
+
+  const entry = entries.find((candidate) => candidate.name) ?? entries[0];
+  if (!entry) return { title: null, image: null, description: null };
+
+  return {
+    title: typeof entry.name === "string" ? entry.name : null,
+    image: structuredImage(entry.image, baseUrl),
+    description:
+      typeof entry.description === "string" ? entry.description : null,
+  };
 }
 
 function isPrivateIpv4(hostname: string) {
@@ -198,30 +285,97 @@ function sourceLabel(url: URL, meta: Map<string, string>): SourceLabel {
   const type = `${meta.get("og:type") ?? ""} ${
     meta.get("product:category") ?? ""
   }`.toLowerCase();
+  const context = `${host} ${url.pathname.toLowerCase()} ${type}`;
 
   if (host === "airbnb.com" || host.endsWith(".airbnb.com")) return "AIRBNB";
   if (
     /(airline|flight|skyscanner|kayak|southwest|delta|united|jetblue)/.test(
-      `${host} ${type}`,
+      context,
     )
   ) {
     return "FLIGHT";
   }
   if (
     /(activity|experience|eventbrite|viator|getyourguide|ticketmaster)/.test(
-      `${host} ${type}`,
+      context,
     )
   ) {
     return "ACTIVITY";
   }
   if (
     /(hotel|lodging|booking\.|vrbo\.|expedia\.|marriott|hilton|hyatt|wyndham)/.test(
-      `${host} ${type}`,
+      context,
     )
   ) {
     return "HOTEL";
   }
   return "WEBSITE";
+}
+
+function humanizeHostname(url: URL) {
+  const hostname = url.hostname.replace(/^www\./, "");
+  const name = hostname.split(".")[0] || "website";
+  return name
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function limitTitle(value: string, maxLength = 56) {
+  if (value.length <= maxLength) return value;
+  const clipped = value.slice(0, maxLength - 1);
+  const lastSpace = clipped.lastIndexOf(" ");
+  const cleanClip = lastSpace >= maxLength * 0.65
+    ? clipped.slice(0, lastSpace)
+    : clipped;
+  return `${cleanClip.trim()}…`;
+}
+
+function cleanTitle(value: string | null, url: URL) {
+  if (!value) return null;
+
+  let title = decodeEntities(value)
+    .replace(/\s*\.\s*H\d+\s*\.\s*Hotel Information.*$/i, "")
+    .replace(/\s+(?:Hotel Information|Official Site)\s*$/i, "")
+    .replace(/\s*[|•]\s*[^|•]+$/u, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const directoryPrefix = title.match(/^(.{2,40})\s+Hotels?\s+(.{8,})$/i);
+  if (directoryPrefix && !/^in\b/i.test(directoryPrefix[2])) {
+    title = directoryPrefix[2].trim();
+  }
+
+  if (
+    !title ||
+    title.length < 3 ||
+    /https?:\/\/|www\.|page unavailable|access denied|captcha/i.test(title) ||
+    /(?:[._]){2,}/.test(title) ||
+    (title.match(/\d/g)?.length ?? 0) > title.length * 0.35
+  ) {
+    return null;
+  }
+
+  const host = url.hostname.replace(/^www\./, "");
+  const cleaned = title
+    .replace(new RegExp(`\\s*[-|]\\s*${host.replace(/\./g, "\\.")}.*$`, "i"), "")
+    .trim();
+  return limitTitle(cleaned);
+}
+
+function safeFallbackTitle(url: URL, label: SourceLabel) {
+  const fromPath = cleanTitle(slugTitle(url), url);
+  if (fromPath) return fromPath;
+  if (label === "AIRBNB") return "Airbnb listing";
+
+  const kind =
+    label === "HOTEL"
+      ? "Hotel option"
+      : label === "FLIGHT"
+        ? "Flight option"
+        : label === "ACTIVITY"
+          ? "Activity option"
+          : "Trip option";
+  return `${kind} from ${humanizeHostname(url)}`;
 }
 
 function slugTitle(url: URL) {
@@ -269,6 +423,73 @@ function formatUrlDate(value: string | null) {
   }).format(date);
 }
 
+function searchParam(url: URL, names: string[]) {
+  const entries = [...url.searchParams.entries()];
+  for (const name of names) {
+    const match = entries.find(([key]) => key.toLowerCase() === name);
+    if (match?.[1]) return match[1];
+  }
+  return null;
+}
+
+function genericUrlEnrichment(url: URL): SiteEnrichment {
+  const checkIn = searchParam(url, [
+    "check_in",
+    "checkin",
+    "check-in",
+    "arrival",
+    "arrivaldate",
+    "startdate",
+  ]);
+  const checkOut = searchParam(url, [
+    "check_out",
+    "checkout",
+    "check-out",
+    "departure",
+    "departuredate",
+    "enddate",
+  ]);
+  const start = formatUrlDate(checkIn);
+  const end = formatUrlDate(checkOut);
+
+  const directGuests = Number(
+    searchParam(url, [
+      "guests",
+      "guest",
+      "travelers",
+      "travellers",
+      "occupancy",
+    ]),
+  );
+  const adults = Number(
+    searchParam(url, ["adults", "group_adults", "numadults", "adultcount"]),
+  );
+  const children = Number(
+    searchParam(url, [
+      "children",
+      "group_children",
+      "numchildren",
+      "childcount",
+    ]),
+  );
+  const guestCount =
+    Number.isInteger(directGuests) && directGuests > 0
+      ? directGuests
+      : Number.isInteger(adults) && adults > 0
+        ? adults + (Number.isInteger(children) && children > 0 ? children : 0)
+        : null;
+
+  return {
+    checkIn: checkIn && start ? checkIn : null,
+    checkOut: checkOut && end ? checkOut : null,
+    dates: start && end ? `${start}–${end}` : start ?? end,
+    guestCount:
+      guestCount && guestCount <= 100 ? guestCount : null,
+    price: null,
+    officialEmbedHtml: null,
+  };
+}
+
 function getAirbnbOfficialEmbed(html: string) {
   const frame = html.match(
     /<div\b[^>]*class\s*=\s*["'][^"']*\bairbnb-embed-frame\b[^"']*["'][^>]*>[\s\S]*?<\/div>/i,
@@ -293,6 +514,8 @@ const siteEnrichers: Record<string, SiteEnricher> = {
     );
 
     return {
+      checkIn: checkIn && start ? checkIn : null,
+      checkOut: checkOut && end ? checkOut : null,
       dates: start && end ? `${start}–${end}` : start ?? end,
       guestCount:
         Number.isInteger(guests) && guests > 0 && guests <= 100
@@ -306,11 +529,59 @@ const siteEnrichers: Record<string, SiteEnricher> = {
 };
 
 function getSiteEnrichment(url: URL, html: string) {
+  const generic = genericUrlEnrichment(url);
   const hostname = url.hostname.toLowerCase().replace(/^www\./, "");
   const entry = Object.entries(siteEnrichers).find(
     ([domain]) => hostname === domain || hostname.endsWith(`.${domain}`),
   );
-  return entry ? entry[1](url, html) : emptyEnrichment;
+  const specific = entry ? entry[1](url, html) : emptyEnrichment;
+
+  return {
+    checkIn: specific.checkIn ?? generic.checkIn,
+    checkOut: specific.checkOut ?? generic.checkOut,
+    dates: specific.dates ?? generic.dates,
+    guestCount: specific.guestCount ?? generic.guestCount,
+    price: specific.price ?? generic.price,
+    officialEmbedHtml:
+      specific.officialEmbedHtml ?? generic.officialEmbedHtml,
+  };
+}
+
+function allowsEmbedding(
+  response: Response,
+  pageUrl: URL,
+  parentOrigin: string,
+) {
+  const frameOptions = (
+    response.headers.get("x-frame-options") ?? ""
+  ).toLowerCase();
+  if (frameOptions.includes("deny")) return false;
+  if (
+    frameOptions.includes("sameorigin") &&
+    pageUrl.origin !== parentOrigin
+  ) {
+    return false;
+  }
+
+  const policy = response.headers.get("content-security-policy") ?? "";
+  const directive = policy
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => /^frame-ancestors\b/i.test(part));
+  if (!directive) return true;
+
+  const sources = directive.split(/\s+/).slice(1);
+  if (sources.includes("'none'")) return false;
+  if (sources.includes("*")) return true;
+  if (sources.includes("'self'") && pageUrl.origin === parentOrigin) return true;
+  if (
+    sources.includes("https:") &&
+    parentOrigin.toLowerCase().startsWith("https:")
+  ) {
+    return true;
+  }
+
+  return sources.some((source) => source.replace(/\/$/, "") === parentOrigin);
 }
 
 async function readTextLimited(response: Response) {
@@ -370,14 +641,16 @@ async function fetchWithValidatedRedirects(initialUrl: URL) {
 
 function fallbackMetadata(url: URL): UnfurlMetadata {
   const enrichment = getSiteEnrichment(url, "");
+  const label = sourceLabel(url, new Map());
 
   return {
-    title: slugTitle(url),
+    title: safeFallbackTitle(url, label),
     image: null,
     description: null,
     siteName: url.hostname.replace(/^www\./, ""),
-    sourceLabel: sourceLabel(url, new Map()),
+    sourceLabel: label,
     ...enrichment,
+    embedUrl: null,
     fallback: true,
   };
 }
@@ -424,6 +697,7 @@ export async function GET(request: NextRequest) {
 
     const html = await readTextLimited(response);
     const meta = getMeta(html);
+    const structured = getStructuredMetadata(html, finalUrl);
     const titleTag = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1];
     const rawImage =
       meta.get("og:image:secure_url") ??
@@ -431,12 +705,16 @@ export async function GET(request: NextRequest) {
       meta.get("twitter:image") ??
       null;
     const image =
-      resolveImage(rawImage, finalUrl) ?? getFirstLargeImage(html, finalUrl);
+      structured.image ??
+      resolveImage(rawImage, finalUrl) ??
+      getFirstLargeImage(html, finalUrl);
+    const label = sourceLabel(finalUrl, meta);
     const title =
-      meta.get("og:title") ??
-      meta.get("twitter:title") ??
-      (titleTag ? decodeEntities(titleTag) : null) ??
-      fallback.title;
+      cleanTitle(structured.title, finalUrl) ??
+      cleanTitle(meta.get("og:title") ?? null, finalUrl) ??
+      cleanTitle(meta.get("twitter:title") ?? null, finalUrl) ??
+      cleanTitle(titleTag ? decodeEntities(titleTag) : null, finalUrl) ??
+      safeFallbackTitle(finalUrl, label);
     const enrichment = getSiteEnrichment(finalUrl, html);
     if (title && /\b404\b|not found|page unavailable/i.test(title)) {
       return NextResponse.json({
@@ -451,6 +729,7 @@ export async function GET(request: NextRequest) {
         title,
         image,
         description:
+          structured.description ??
           meta.get("og:description") ??
           meta.get("description") ??
           meta.get("twitter:description") ??
@@ -458,8 +737,15 @@ export async function GET(request: NextRequest) {
         siteName:
           meta.get("og:site_name") ??
           finalUrl.hostname.replace(/^www\./, ""),
-        sourceLabel: sourceLabel(finalUrl, meta),
+        sourceLabel: label,
         ...enrichment,
+        embedUrl: allowsEmbedding(
+          response,
+          finalUrl,
+          request.nextUrl.origin,
+        )
+          ? finalUrl.toString()
+          : null,
         fallback: !title || !image,
       } satisfies UnfurlMetadata,
     });
