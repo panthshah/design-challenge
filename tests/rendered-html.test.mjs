@@ -12,9 +12,9 @@ test("ships the five-stage consensus journey", async () => {
   const page = await source("app/prototype/page.tsx");
 
   for (const label of [
-    "Collect options",
+    "Start with a real option.",
     "Private affordability",
-    "Private favorite",
+    "Which viable option would you choose?",
     "Approve my share",
     "Booked for everyone.",
   ]) {
@@ -22,6 +22,8 @@ test("ships the five-stage consensus journey", async () => {
   }
 
   assert.match(page, /Choose as my favorite/);
+  assert.match(page, /aria-pressed=\{favoriteChoice === option\.id\}/);
+  assert.match(page, /snapshot\.privateState\?\.myFavorite \?\? current/);
   assert.match(page, /Works for me/);
   assert.match(page, /Too much/);
   assert.doesNotMatch(page, /Pick this option/);

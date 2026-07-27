@@ -243,9 +243,11 @@
     color 180ms ease;
 }
 
-.greenAction:hover,
-.primaryAction:hover {
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+  .greenAction:hover,
+  .primaryAction:hover {
+    transform: translateY(-2px);
+  }
 }
 
 .greenAction:active,
@@ -352,7 +354,7 @@
   color: currentColor;
   caret-color: currentColor;
   font: inherit;
-  font-size: clamp(34px, 10vw, 44px);
+  font-size: clamp(26px, 8vw, 34px);
   font-weight: 700;
   letter-spacing: -0.05em;
   line-height: 1.2;
@@ -412,8 +414,10 @@
     box-shadow 160ms ease;
 }
 
-.shaderSwatch:hover {
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+  .shaderSwatch:hover {
+    transform: translateY(-2px);
+  }
 }
 
 .shaderSwatch:active {
@@ -572,7 +576,7 @@
   width: 44px;
   height: 44px;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 4px;
 }
 
 .characterOption > span:last-child {
@@ -584,8 +588,10 @@
   white-space: nowrap;
 }
 
-.characterOption:hover:not(:disabled) {
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+  .characterOption:hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
 }
 
 .characterOption:active:not(:disabled) {
@@ -620,6 +626,14 @@
   box-shadow:
     0 8px 22px rgba(37, 32, 23, 0.1),
     inset 0 0 0 1px rgba(22, 21, 17, 0.08);
+}
+
+.aliasCardScrim {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: var(--alias-scrim);
+  pointer-events: none;
 }
 
 .aliasCardContent {
@@ -817,13 +831,8 @@
   border-radius: 50%;
 }
 
-.groupHero p,
-.groupHero h1 {
-  margin: 0;
-}
-
-.groupHero > div:last-child > p:first-child {
-  margin-bottom: 5px;
+.groupHeroStatus {
+  margin: 0 0 5px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -831,16 +840,17 @@
 }
 
 .groupHero h1 {
+  margin: 0;
   font-size: 40px;
   letter-spacing: -0.055em;
   line-height: 0.96;
 }
 
-.groupHero > div:last-child > p:last-child {
-  margin-top: 8px;
+.groupHeroCount {
+  margin: 12px 0 0;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 400;
 }
 
 .roomIntro {
@@ -903,10 +913,6 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-}
-
-.planHeading .eyebrow {
-  margin-bottom: 7px;
 }
 
 .planHeading h2 {
@@ -1227,9 +1233,9 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   padding: 16px;
-  gap: 18px;
+  gap: 12px;
 }
 
 .importCardCopy > div {
@@ -1251,10 +1257,11 @@
 
 .importCardCopy a {
   flex: none;
-  color: inherit;
+  color: #2268c9;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11px;
   font-weight: 700;
+  text-decoration: underline;
   text-underline-offset: 3px;
 }
 
@@ -1269,7 +1276,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1.06;
@@ -1312,7 +1319,7 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 16px;
 }
 
@@ -1331,6 +1338,14 @@
   text-transform: uppercase;
 }
 
+.previewMiniCopy .previewMiniStatus {
+  align-self: flex-start;
+  margin-top: 8px;
+  color: #2268c9;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .previewMiniCopy a {
   color: inherit;
   font-family: Arial, Helvetica, sans-serif;
@@ -1339,26 +1354,19 @@
   text-underline-offset: 3px;
 }
 
-.previewMiniCopy h2,
-.previewMiniCopy p {
+.previewMiniCopy h2 {
   margin: 0;
 }
 
 .previewMiniCopy h2 {
+  display: -webkit-box;
   overflow: hidden;
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: 19px;
   letter-spacing: -0.035em;
   line-height: 1.06;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.previewMiniCopy p {
-  margin-top: 5px;
-  color: #6e6458;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 10px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .previewFallbackNote {
@@ -1435,7 +1443,6 @@
 
 .categoryPicker legend,
 .totalField > span:first-child {
-  margin-bottom: 8px;
   color: #6e6458;
   font-size: 10px;
   font-weight: 700;
@@ -1444,6 +1451,7 @@
 }
 
 .categoryPicker legend {
+  margin-bottom: 8px;
   grid-column: 1 / -1;
 }
 
@@ -1479,27 +1487,29 @@
 .confirmFields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(22, 21, 17, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.52);
 }
 
 .confirmFields > label,
 .readOnlyField {
   display: grid;
   min-width: 0;
-  min-height: 64px;
+  min-height: 76px;
   align-content: center;
-  padding: 8px 16px;
-  gap: 6px;
-  border: 1px solid rgba(22, 21, 17, 0.18);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.52);
+  padding: 14px 16px;
+  gap: 8px;
+  border-top: 1px solid rgba(22, 21, 17, 0.14);
+}
+
+.confirmFields > label {
+  border-left: 1px solid rgba(22, 21, 17, 0.14);
 }
 
 .confirmFields > label > span,
 .readOnlyField > span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
   color: #6e6458;
   font-size: 10px;
   font-weight: 700;
@@ -1509,19 +1519,19 @@
 
 .readOnlyField strong {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .dateRangeField {
   display: grid;
   min-width: 0;
   margin: 0;
-  padding: 12px 16px 14px;
-  border: 1px solid rgba(22, 21, 17, 0.18);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.52);
+  padding: 16px;
+  border: 0;
   grid-column: 1 / -1;
-  gap: 10px;
+  gap: 14px;
 }
 
 .dateRangeField legend {
@@ -1539,13 +1549,13 @@
 .dateRangeField > div {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 20px;
 }
 
 .dateRangeField label {
   display: grid;
   min-width: 0;
-  gap: 5px;
+  gap: 7px;
 }
 
 .dateRangeField label span {
@@ -1571,22 +1581,32 @@
   color: inherit;
   font: inherit;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.confirmFields > label:focus-within {
+  background: rgba(213, 235, 132, 0.18);
+  box-shadow: inset 0 0 0 2px rgba(22, 21, 17, 0.16);
+}
+
+.dateRangeField label:focus-within span {
+  color: #161511;
 }
 
 .pricingPanel {
   display: grid;
   padding: 16px;
+  border: 1px solid oklch(0.76 0.035 104 / 0.5);
   border-radius: 12px;
-  background: #f2ecdc;
-  box-shadow: inset 0 0 0 1px rgba(22, 21, 17, 0.08);
-  gap: 16px;
+  background: oklch(0.965 0.03 108);
+  gap: 14px;
 }
 
 .pricingEyebrow {
   margin: 0;
-  color: #6e6458;
+  color: oklch(0.42 0.025 92);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.11em;
@@ -1604,16 +1624,16 @@
   align-items: center;
   padding: 0 16px;
   gap: 4px;
-  border: 1px solid rgba(22, 21, 17, 0.34);
+  border: 1px solid oklch(0.44 0.02 92 / 0.58);
   border-radius: 8px;
-  background: #fffbea;
+  background: oklch(0.99 0.012 100);
   font-size: 30px;
   font-weight: 700;
 }
 
 .moneyInput:focus-within {
-  border-color: #161511;
-  box-shadow: 0 0 0 3px rgba(22, 21, 17, 0.1);
+  border-color: oklch(0.27 0.015 92);
+  box-shadow: 0 0 0 3px oklch(0.82 0.12 116 / 0.3);
 }
 
 .moneyInput input {
@@ -1626,17 +1646,29 @@
   font: inherit;
 }
 
+.moneyInput input::placeholder {
+  color: oklch(0.54 0.015 92);
+  opacity: 1;
+}
+
 .shareCalculation {
-  padding: 16px 0 0;
-  border-top: 1px solid rgba(22, 21, 17, 0.14);
+  padding: 14px;
+  border-radius: 8px;
+  background: oklch(0.925 0.09 116);
   color: #161511;
 }
 
 .shareCalculation > div {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
+}
+
+.shareCalculationCopy {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
 }
 
 .shareCalculation span {
@@ -1647,21 +1679,22 @@
 }
 
 .shareCalculation strong {
+  flex: none;
   font-size: 30px;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
 }
 
 .shareCalculation p {
-  margin: 4px 0 0;
-  color: #6e6458;
+  margin: 0;
+  color: oklch(0.35 0.035 112);
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11.5px;
 }
 
 .costDetails {
   margin-top: 0;
-  border-top: 1px solid rgba(22, 21, 17, 0.14);
+  border-top: 1px solid oklch(0.58 0.03 103 / 0.32);
   border-bottom: 0;
 }
 
@@ -2609,20 +2642,19 @@
   gap: 8px;
 }
 
-.favoriteGrid label {
+.favoriteGrid button {
   position: relative;
   min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
   cursor: pointer;
+  font: inherit;
+  text-align: left;
 }
 
-.favoriteGrid input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-
-.favoriteGrid label > span {
+.favoriteGrid button > span {
   display: grid;
   min-height: 72px;
   padding: 12px 14px;
@@ -2636,12 +2668,16 @@
     transform 160ms ease;
 }
 
-.favoriteGrid input:focus-visible + span {
+.favoriteGrid button:focus-visible {
+  outline: none;
+}
+
+.favoriteGrid button:focus-visible > span {
   outline: 3px solid #5c47d6;
   outline-offset: 2px;
 }
 
-.favoriteGrid input:checked + span {
+.favoriteGrid button[aria-pressed="true"] > span {
   border-color: #161511;
   background: #d5eb84;
   transform: translateY(-1px);
@@ -3015,7 +3051,7 @@
 
   .anonymousProgress > span,
   .darkAction,
-  .favoriteGrid label > span {
+  .favoriteGrid button > span {
     transition: none;
   }
 

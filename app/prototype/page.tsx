@@ -409,7 +409,7 @@ function formatOptionDates(checkIn: string, checkOut: string) {
   return start && end ? `${start}–${end}` : start || end;
 }
 
-function limitOptionTitle(value: string, maxLength = 56) {
+function limitOptionTitle(value: string, maxLength = 36) {
   if (value.length <= maxLength) return value;
   const clipped = value.slice(0, maxLength - 1);
   const lastSpace = clipped.lastIndexOf(" ");
@@ -438,6 +438,22 @@ function categoryLabel(category: OptionCategory) {
   if (category === "stay") return "Stay";
   if (category === "travel") return "Travel";
   return "Activity";
+}
+
+function inkIsLight(ink: string) {
+  const hex = ink.replace("#", "");
+  if (hex.length !== 6) return false;
+
+  const [red, green, blue] = [0, 2, 4].map(
+    (offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255,
+  );
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue > 0.6;
+}
+
+function cardScrim(ink: string) {
+  return inkIsLight(ink)
+    ? "linear-gradient(90deg, rgba(12, 11, 8, 0.46) 0%, rgba(12, 11, 8, 0.2) 58%, rgba(12, 11, 8, 0.06) 100%)"
+    : "linear-gradient(90deg, rgba(255, 251, 234, 0.44) 0%, rgba(255, 251, 234, 0.16) 58%, rgba(255, 251, 234, 0.04) 100%)";
 }
 
 function ShaderCardBackdrop({
@@ -540,7 +556,11 @@ function PrototypeLandingContent() {
     setSharedSnapshot(snapshot);
     setActiveGroup(snapshot.group);
     setCurrentGroupId(snapshot.group.id);
-    setFavoriteChoice(snapshot.privateState?.myFavorite ?? null);
+    setFavoriteChoice((current) =>
+      snapshot.group.phase === "favorite"
+        ? (snapshot.privateState?.myFavorite ?? current)
+        : (snapshot.privateState?.myFavorite ?? null),
+    );
 
     if (snapshot.currentMember) {
       setIdentityNickname(snapshot.currentMember.nickname);
@@ -716,6 +736,15 @@ function PrototypeLandingContent() {
 
   useEffect(() => {
     if (screen !== "confirm-option" || !optionTitleFieldRef.current) return;
+    const limitedTitle = limitOptionTitle(optionDraft.title);
+    if (limitedTitle !== optionDraft.title) {
+      setOptionDraft((current) => ({
+        ...current,
+        title: limitedTitle,
+      }));
+      return;
+    }
+
     const field = optionTitleFieldRef.current;
     field.style.height = "0";
     field.style.height = `${field.scrollHeight}px`;
@@ -1638,7 +1667,6 @@ function PrototypeLandingContent() {
               }}
             >
               <div>
-                <p className={styles.eyebrow}>Only for this group</p>
                 <h1>Choose your character.</h1>
                 <p className={styles.formIntro}>
                   This is how friends will know you in this group. It stays
@@ -1686,15 +1714,21 @@ function PrototypeLandingContent() {
                 className={styles.aliasCard}
                 aria-label="Your group nickname"
                 aria-describedby={identityError ? "identity-error" : undefined}
-                style={{
-                  background: savedGroupVibe?.gradient ?? "#f2ecdc",
-                  color: savedGroupVibe?.ink ?? "#161511",
-                }}
+                style={
+                  {
+                    background: savedGroupVibe?.gradient ?? "#f2ecdc",
+                    color: savedGroupVibe?.ink ?? "#161511",
+                    "--alias-scrim": cardScrim(savedGroupVibe?.ink ?? "#161511"),
+                  } as CSSProperties
+                }
               >
                 <ShaderCardBackdrop
                   vibe={savedGroupVibe}
                   reducedMotion={reducedMotion}
                 />
+                {savedGroupVibe && (
+                  <span className={styles.aliasCardScrim} aria-hidden="true" />
+                )}
                 <div className={styles.aliasCardContent}>
                   <div>
                     <span>Your nickname</span>
@@ -1783,13 +1817,11 @@ function PrototypeLandingContent() {
                     <span>{displayedNickname}</span>
                   </div>
                   <div>
-                    <p>
-                      {activeGroup?.phase === "booked"
-                        ? "Consensus complete"
-                        : savedGroupVibe?.name ?? "Quorum group"}
-                    </p>
+                    {activeGroup?.phase === "booked" && (
+                      <p className={styles.groupHeroStatus}>Consensus complete</p>
+                    )}
                     <h1>{activeGroupName}</h1>
-                    <p>
+                    <p className={styles.groupHeroCount}>
                       {activeGroup?.memberCount ?? 0}{" "}
                       {(activeGroup?.memberCount ?? 0) === 1 ? "member" : "members"}
                       {activeGroup?.phase === "collecting"
@@ -1850,7 +1882,6 @@ function PrototypeLandingContent() {
                 <section className={styles.planSection}>
                   <div className={styles.planHeading}>
                     <div>
-                      <p className={styles.eyebrow}>Collect options</p>
                       <h2>
                         {groupOptions.length > 0
                           ? "Build the shortlist."
@@ -1984,7 +2015,6 @@ function PrototypeLandingContent() {
                   {isCreator && (
                     <div className={styles.phaseActionCard}>
                       <div>
-                        <p className={styles.eyebrow}>Ready for the next step?</p>
                         <h3>Lock the room and check affordability.</h3>
                         <p>
                           This freezes members, dates, and prices. Everyone answers
@@ -1997,7 +2027,7 @@ function PrototypeLandingContent() {
                         onClick={startPrivateReview}
                         disabled={groupOptions.length === 0 || sharedBusy}
                       >
-                        Everyone’s here — start private review
+                        Start private review
                       </button>
                     </div>
                   )}
@@ -2080,28 +2110,29 @@ function PrototypeLandingContent() {
                   <div className={styles.phasePanelIcon}>
                     <Sparkle size={24} weight="fill" aria-hidden="true" />
                   </div>
-                  <p className={styles.eyebrow}>Private favorite</p>
                   <h2>Which viable option would you choose?</h2>
                   <p>
                     Everyone can reconsider. Quorum moves on only when the whole
                     group independently lands on the same option.
                   </p>
-                  <div className={styles.favoriteGrid}>
+                  <div
+                    className={styles.favoriteGrid}
+                    role="group"
+                    aria-label="Choose your favorite option"
+                  >
                     {groupOptions.map((option) => (
-                      <label key={option.id}>
-                        <input
-                          type="radio"
-                          name="favorite"
-                          value={option.id}
-                          checked={favoriteChoice === option.id}
-                          onChange={() => setFavoriteChoice(option.id)}
-                        />
+                      <button
+                        key={option.id}
+                        type="button"
+                        aria-pressed={favoriteChoice === option.id}
+                        onClick={() => setFavoriteChoice(option.id)}
+                      >
                         <span>
                           <small>{option.provider}</small>
                           <strong>{option.title}</strong>
                           <em>{currency(getPerPerson(option))} each</em>
                         </span>
-                      </label>
+                      </button>
                     ))}
                   </div>
                   <button
@@ -2174,11 +2205,11 @@ function PrototypeLandingContent() {
                       <div className={styles.bookingMark}>
                         <Check size={30} weight="bold" aria-hidden="true" />
                       </div>
-                      <p className={styles.eyebrow}>Simulated booking complete</p>
                       <h2>Booked for everyone.</h2>
                       <p>
-                        The prototype has carried one shared decision all the way
-                        through explicit payment approval.
+                        Everyone approved their share, and the booking is
+                        complete. No one had to front the cost or chase a friend
+                        later.
                       </p>
                       <article className={styles.receiptCard}>
                         <small>{selectedConsensusOption.provider}</small>
@@ -2206,8 +2237,12 @@ function PrototypeLandingContent() {
                           Open original provider link
                         </a>
                       </article>
-                      <button className={styles.secondaryAction} type="button">
-                        View mock receipt
+                      <button
+                        className={styles.secondaryAction}
+                        type="button"
+                        onClick={goBack}
+                      >
+                        Return to home
                       </button>
                     </>
                   )}
@@ -2245,11 +2280,10 @@ function PrototypeLandingContent() {
               }}
             >
               <div>
-                <p className={styles.eyebrow}>Bring the real thing</p>
                 <h1>Paste the option.</h1>
                 <p className={styles.formIntro}>
-                  Airbnb, hotel, flight, activity—Quorum will turn the link
-                  into a clean group decision.
+                  Paste an Airbnb listing. Quorum will pull in the details and
+                  turn it into an option everyone can review.
                 </p>
               </div>
 
@@ -2293,8 +2327,7 @@ function PrototypeLandingContent() {
                 </p>
               ) : (
                 <p className={styles.sourceHint} id="source-hint">
-                  Works with Airbnb, Booking.com, Vrbo, Expedia, and other
-                  public links.
+                  Add an Airbnb link here.
                 </p>
               )}
 
@@ -2343,14 +2376,13 @@ function PrototypeLandingContent() {
                   <div className={styles.previewMiniCopy}>
                     <div>
                       <span>{optionDraft.sourceType}</span>
-                      <span>Tap to preview</span>
                     </div>
                     <h2>{optionDraft.title}</h2>
-                    <p>
+                    <span className={styles.previewMiniStatus}>
                       {unfurlStatus === "fallback"
-                        ? "Couldn’t preview this link · enter details manually"
+                        ? "Enter details"
                         : "Preview ready"}
-                    </p>
+                    </span>
                   </div>
                 </button>
               )}
@@ -2450,7 +2482,7 @@ function PrototypeLandingContent() {
                           }))
                         }
                         placeholder="Name this option"
-                        maxLength={56}
+                        maxLength={36}
                       />
                     </label>
                   </div>
@@ -2543,10 +2575,7 @@ function PrototypeLandingContent() {
                 </fieldset>
 
                 <div className={styles.readOnlyField}>
-                  <span>
-                    <UsersThree size={16} weight="bold" aria-hidden="true" />
-                    Sharing
-                  </span>
+                  <span>Sharing</span>
                   <strong>
                     {draftParticipants}{" "}
                     {draftParticipants === 1 ? "person" : "people"}
@@ -2554,10 +2583,7 @@ function PrototypeLandingContent() {
                 </div>
 
                 <label>
-                  <span>
-                    <UsersThree size={16} weight="bold" aria-hidden="true" />
-                    Travelers
-                  </span>
+                  <span>Travelers</span>
                   <input
                     type="number"
                     min="1"
@@ -2611,18 +2637,22 @@ function PrototypeLandingContent() {
                   aria-live="polite"
                 >
                   <div>
-                    <span>Your current share</span>
+                    <div className={styles.shareCalculationCopy}>
+                      <span>Your current share</span>
+                      <p>
+                        {draftShare > 0
+                          ? `Each if ${draftParticipants} ${
+                              draftParticipants === 1
+                                ? "person is"
+                                : "people are"
+                            } sharing.`
+                          : "Add the total to calculate everyone’s share."}
+                      </p>
+                    </div>
                     <strong>
-                      {draftShare > 0 ? currency(draftShare) : "—"}
+                      {draftShare > 0 ? currency(draftShare) : "$$"}
                     </strong>
                   </div>
-                  <p>
-                    {draftShare > 0
-                      ? `Each if ${draftParticipants} ${
-                          draftParticipants === 1 ? "person is" : "people are"
-                        } sharing.`
-                      : "Add the total to calculate everyone’s share."}
-                  </p>
                 </section>
 
                 <details
