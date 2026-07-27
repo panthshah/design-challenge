@@ -130,9 +130,45 @@ body {
   overflow: hidden;
 }
 
+.story-setup {
+  position: absolute;
+  top: 5svh;
+  right: 5vw;
+  left: 5vw;
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1.2fr);
+  align-items: start;
+  gap: clamp(32px, 6vw, 96px);
+}
+
+.story-setup h2,
+.story-setup p {
+  margin: 0;
+}
+
+.story-setup h2 {
+  max-width: 13ch;
+  color: var(--ink);
+  font-size: clamp(32px, 3vw, 44px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.story-setup p {
+  max-width: 58ch;
+  justify-self: end;
+  color: rgba(36, 35, 31, 0.76);
+  font-size: clamp(16px, 1.25vw, 18px);
+  font-weight: 700;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
 .story-viewport {
   position: absolute;
-  top: 8svh;
+  top: 25svh;
   right: 0;
   bottom: 0;
   left: 0;
@@ -154,7 +190,7 @@ body {
 .story-slide {
   display: block;
   width: min(82vw, 1184px);
-  height: 78svh;
+  height: 66svh;
   flex: none;
   overflow: hidden;
   padding: clamp(32px, 4.45vw, 64px);
@@ -340,6 +376,23 @@ body {
     height: auto;
     overflow: visible;
     padding: 80px 20px;
+  }
+
+  .story-setup {
+    position: static;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-bottom: 48px;
+  }
+
+  .story-setup h2 {
+    font-size: clamp(36px, 10vw, 52px);
+  }
+
+  .story-setup p {
+    max-width: 65ch;
+    justify-self: start;
+    font-size: 16px;
   }
 
   .story-viewport {

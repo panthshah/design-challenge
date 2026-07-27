@@ -552,6 +552,15 @@ export default function Home() {
           aria-labelledby="story-heading"
         >
           <div className="story-stage">
+            <header className="story-setup">
+              <h2 id="story-heading">what are we building today?</h2>
+              <p>
+                quorum is a private decision room for shared financial choices.
+                it helps groups reach a clear answer without turning money into
+                a referendum on their relationships.
+              </p>
+            </header>
+
             <div className="story-viewport">
               <div className="story-track" ref={storyTrackRef}>
                 {STORY_SLIDES.map((slide) => (
@@ -562,9 +571,7 @@ export default function Home() {
                     key={slide.id}
                   >
                     <div className="slide-copy">
-                      <h2 id={slide.intro ? "story-heading" : undefined}>
-                        {slide.title}
-                      </h2>
+                      <h2>{slide.title}</h2>
                       <div className="slide-description">
                         {slide.description}
                       </div>
