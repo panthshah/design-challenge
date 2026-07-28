@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { MeshGradient } from "@paper-design/shaders-react";
 import {
   AirplaneTilt,
+  ArrowSquareOut,
   ArrowsClockwise,
   Bank,
   Bird,
@@ -1477,6 +1478,24 @@ function PrototypeLandingContent() {
             data-testid="prototype-screen-one"
             style={appThemeStyle}
           >
+        {screen === "home" && (
+          <div
+            className={styles.homeShaderLayer}
+            style={{ background: "linear-gradient(160deg, #fffbea 0%, #f3ecd4 45%, #e4efb0 100%)" }}
+            aria-hidden="true"
+          >
+            <MeshGradient
+              className={styles.activeShader}
+              colors={["#fffbea", "#f3e7c4", "#d8ef8a", "#e7f3d4"]}
+              distortion={0.42}
+              swirl={0.5}
+              grainMixer={0.08}
+              grainOverlay={0.05}
+              speed={reducedMotion ? 0 : 0.14}
+            />
+          </div>
+        )}
+
         {screen === "create" && selectedVibe && (
           <div
             className={styles.activeShaderLayer}
@@ -1496,38 +1515,38 @@ function PrototypeLandingContent() {
         )}
 
         {screen === "home" && (
-          <div className={styles.screen} key="home">
-            <header className={styles.header}>
-              <span className={styles.wordmark}>Quorum</span>
-            </header>
+          <div className={`${styles.screen} ${styles.homeScreen}`} key="home">
+            <div className={styles.homeBody}>
+              <div className={styles.homeBrand}>Quorum</div>
 
-            <div className={styles.homeContent}>
-              <div>
-                <h1>
-                  Make plans <span>that work for everyone.</span>
-                </h1>
-                <p className={styles.lede}>
-                  Find common ground without asking friends to share what they
-                  can afford.
-                </p>
+              <div className={styles.homeLower}>
+                <div className={styles.homeCopy}>
+                  <h1>
+                    Make plans that work for <span>everyone.</span>
+                  </h1>
+                  <p className={styles.lede}>
+                    Find common ground without asking friends to share what they
+                    can afford.
+                  </p>
+                </div>
+
+                <div className={styles.entryActions}>
+                  <button
+                    className={styles.greenAction}
+                    type="button"
+                    onClick={() => startPath("create")}
+                  >
+                    Create a group
+                  </button>
+                  <button
+                    className={`${styles.textAction} ${styles.homeTextAction}`}
+                    type="button"
+                    onClick={() => startPath("join")}
+                  >
+                    Join with an invite
+                  </button>
+                </div>
               </div>
-            </div>
-
-            <div className={styles.entryActions}>
-              <button
-                className={styles.greenAction}
-                type="button"
-                onClick={() => startPath("create")}
-              >
-                Create a group
-              </button>
-              <button
-                className={styles.textAction}
-                type="button"
-                onClick={() => startPath("join")}
-              >
-                Join with an invite
-              </button>
             </div>
           </div>
         )}
@@ -1638,7 +1657,6 @@ function PrototypeLandingContent() {
               }}
             >
               <div>
-                <p className={styles.eyebrow}>Private invite</p>
                 <h1>Join your group.</h1>
                 <p className={styles.formIntro}>
                   Paste the invite link or short code a friend sent you.
@@ -2227,10 +2245,12 @@ function PrototypeLandingContent() {
 
               {activeGroup?.phase === "authorizing" && selectedConsensusOption && (
                 <section className={styles.phasePanel}>
-                  <div className={styles.phasePanelIcon}>
-                    <Check size={24} weight="bold" aria-hidden="true" />
+                  <div className={styles.phasePanelHeading}>
+                    <div className={styles.phasePanelIcon}>
+                      <Check size={24} weight="bold" aria-hidden="true" />
+                    </div>
+                    <h2>Approve your exact share.</h2>
                   </div>
-                  <h2>Approve your exact share.</h2>
                   <p>
                     Choosing a favorite did not authorize a charge. Review the
                     locked total before approving this simulated payment.
@@ -2243,10 +2263,6 @@ function PrototypeLandingContent() {
                       <span>Your exact share</span>
                       <strong>{currency((myShare ?? 0) / 100)}</strong>
                     </div>
-                    <footer>
-                      <span>Checking •• 4821</span>
-                      <span>{currency(selectedConsensusOption.allInTotal)} total</span>
-                    </footer>
                   </article>
                   <button
                     className={styles.greenAction}
@@ -2273,10 +2289,12 @@ function PrototypeLandingContent() {
                     </div>
                   ) : (
                     <>
-                      <div className={styles.bookingMark}>
-                        <Check size={30} weight="bold" aria-hidden="true" />
+                      <div className={styles.phasePanelHeading}>
+                        <div className={styles.bookingMark}>
+                          <Check size={30} weight="bold" aria-hidden="true" />
+                        </div>
+                        <h2>Booked for everyone.</h2>
                       </div>
-                      <h2>Booked for everyone.</h2>
                       <p>
                         Everyone approved their share, and the booking is
                         complete. No one had to front the cost or chase a friend
@@ -2517,27 +2535,30 @@ function PrototypeLandingContent() {
                       : ""
                   }`}
                 >
-                  {optionDraft.imageUrl && !previewImageFailed ? (
-                    <img
-                      src={optionDraft.imageUrl}
-                      alt=""
-                      onError={() => setPreviewImageFailed(true)}
-                    />
-                  ) : (
-                    <div className={styles.neutralPreview} aria-hidden="true">
-                      <img src="/vegas-weekend-cover.png" alt="" />
-                      <Link size={28} weight="bold" />
-                    </div>
-                  )}
+                  <div className={styles.importCardThumbnail}>
+                    {optionDraft.imageUrl && !previewImageFailed ? (
+                      <img
+                        src={optionDraft.imageUrl}
+                        alt=""
+                        onError={() => setPreviewImageFailed(true)}
+                      />
+                    ) : (
+                      <div className={styles.neutralPreview} aria-hidden="true">
+                        <img src="/vegas-weekend-cover.png" alt="" />
+                        <Link size={28} weight="bold" />
+                      </div>
+                    )}
+                  </div>
                   <div className={styles.importCardCopy}>
-                    <div>
+                    <div className={styles.importCardHeader}>
                       <span>{optionDraft.sourceType}</span>
                       <a
                         href={optionDraft.sourceUrl}
                         target="_blank"
                         rel="noreferrer"
+                        aria-label="Open source link in a new tab"
                       >
-                        Open link
+                        <ArrowSquareOut size={16} weight="bold" aria-hidden />
                       </a>
                     </div>
                     <label>
@@ -2556,6 +2577,15 @@ function PrototypeLandingContent() {
                         maxLength={36}
                       />
                     </label>
+                    <p className={styles.importCardMeta}>
+                      {optionDraft.dates.trim() ||
+                        `${optionDraft.sourceGuestCount ?? groupDefaultTravelers} ${
+                          (optionDraft.sourceGuestCount ??
+                            groupDefaultTravelers) === 1
+                            ? "guest"
+                            : "guests"
+                        }`}
+                    </p>
                   </div>
                 </section>
               )}
@@ -2821,7 +2851,6 @@ function PrototypeLandingContent() {
               </section>
 
               <div className={styles.comfortQuestion}>
-                <p className={styles.eyebrow}>Your private call</p>
                 <h1>
                   How would {currency(getPerPerson(activeOption))} each feel?
                 </h1>

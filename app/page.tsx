@@ -751,10 +751,20 @@ export default function Home() {
               </div>
             </div>
 
-            <Link className="prototype-mode-link" href="/prototype">
-              <span>Enter prototype mode</span>
-              <span aria-hidden="true">↗</span>
-            </Link>
+            <div className="prototype-mode-actions">
+              <Link className="prototype-mode-link" href="/prototype">
+                <span>Enter prototype mode</span>
+                <span aria-hidden="true">↗</span>
+              </Link>
+              <a
+                className="prototype-mode-secondary"
+                href="https://app.notion.com/p/Design-Challenge-Quorum-App-3aa0f338ad7b813184c2dd17c88e56f9?source=copy_link"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open Notion document
+              </a>
+            </div>
           </div>
         </section>
       </main>

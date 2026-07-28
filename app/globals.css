@@ -610,11 +610,19 @@ body {
   object-position: 50% 56%;
 }
 
-.prototype-mode-link {
+.prototype-mode-actions {
   position: absolute;
   z-index: 4;
   bottom: max(8px, env(safe-area-inset-bottom));
   left: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  transform: translateX(-50%);
+}
+
+.prototype-mode-link {
   display: inline-flex;
   min-height: 52px;
   align-items: center;
@@ -632,11 +640,26 @@ body {
   letter-spacing: -0.01em;
   line-height: 1;
   text-decoration: none;
-  transform: translateX(-50%);
   transition:
     transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
     background-color 180ms ease;
+}
+
+.prototype-mode-secondary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  color: #262520;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: opacity 160ms ease, transform 160ms ease;
 }
 
 .prototype-mode-link:hover {
@@ -644,14 +667,23 @@ body {
   box-shadow:
     0 1px 1px rgba(36, 35, 31, 0.1),
     0 14px 34px rgba(36, 35, 31, 0.22);
-  transform: translateX(-50%) translateY(-2px);
+  transform: translateY(-2px);
+}
+
+.prototype-mode-secondary:hover {
+  opacity: 0.72;
 }
 
 .prototype-mode-link:active {
-  transform: translateX(-50%) scale(0.96);
+  transform: scale(0.96);
 }
 
-.prototype-mode-link:focus-visible {
+.prototype-mode-secondary:active {
+  transform: scale(0.96);
+}
+
+.prototype-mode-link:focus-visible,
+.prototype-mode-secondary:focus-visible {
   outline: 3px solid #2f80ff;
   outline-offset: 4px;
 }
@@ -812,21 +844,19 @@ body {
     aspect-ratio: 1 / 1;
   }
 
-  .prototype-mode-link {
+  .prototype-mode-actions {
     position: relative;
     bottom: auto;
     left: auto;
+    flex-direction: column;
+    gap: 12px;
     width: fit-content;
     margin: 32px auto 0;
     transform: none;
   }
 
-  .prototype-mode-link:hover {
-    transform: translateY(-2px);
-  }
-
-  .prototype-mode-link:active {
-    transform: scale(0.96);
+  .prototype-mode-link {
+    width: fit-content;
   }
 }
 
@@ -969,7 +999,8 @@ body {
     will-change: auto;
   }
 
-  .prototype-mode-link {
+  .prototype-mode-link,
+  .prototype-mode-secondary {
     transition: none;
   }
 }

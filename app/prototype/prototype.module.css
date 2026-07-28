@@ -40,7 +40,12 @@
   color: var(--vibe-ink);
 }
 
-.activeShaderLayer {
+.app[data-screen="home"] {
+  background: #fffbea;
+}
+
+.activeShaderLayer,
+.homeShaderLayer {
   position: absolute;
   z-index: 0;
   inset: 0;
@@ -171,12 +176,54 @@
   text-underline-offset: 3px;
 }
 
-.homeContent {
+.homeScreen {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.homeBody {
+  position: relative;
   display: flex;
+  box-sizing: border-box;
   min-height: 0;
+  height: 100%;
   flex-direction: column;
-  justify-content: center;
-  padding: 28px 22px 24px;
+  padding: 0 24px;
+}
+
+.homeBrand {
+  position: absolute;
+  top: 12%;
+  left: 24px;
+  z-index: 2;
+  margin: 0;
+  color: rgba(22, 21, 17, 0.6);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.homeLower {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 32px;
+  width: 100%;
+  padding-bottom: 24px;
+}
+
+.homeCopy {
+  position: absolute;
+  top: 50%;
+  right: 24px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  text-align: left;
+  transform: translateY(-50%);
 }
 
 .eyebrow {
@@ -184,7 +231,7 @@
   color: #6e6458;
 }
 
-.homeContent h1,
+.homeCopy h1,
 .formScreen h1,
 .shareContent h1 {
   margin: 0;
@@ -194,14 +241,16 @@
   line-height: 0.92;
 }
 
-.homeContent h1 {
-  font-size: 48px;
+.homeCopy h1 {
+  color: #161511;
+  font-size: clamp(34px, 8.6vw, 40px);
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  text-wrap: balance;
 }
 
-.homeContent h1 span {
-  display: block;
-  margin-top: 0.16em;
-  color: #2f6c49;
+.homeCopy h1 span {
+  color: #24553a;
 }
 
 .lede,
@@ -214,11 +263,27 @@
 }
 
 .lede {
-  font-size: 16px;
+  margin: 0;
+  max-width: 30ch;
+  color: rgba(58, 53, 48, 0.7);
+  font-size: 15px;
+  line-height: 1.5;
+  text-align: left;
 }
 
 .entryActions {
-  padding: 12px 18px 16px;
+  display: grid;
+  gap: 24px;
+  padding: 0;
+  justify-items: stretch;
+}
+
+.entryActions .homeTextAction {
+  margin-top: 0;
+  min-height: 0;
+  padding: 0;
+  color: #3f3a33;
+  text-align: center;
 }
 
 .greenAction,
@@ -1172,32 +1237,41 @@
 
 .confirmScreen {
   padding: 16px 20px 24px;
-  gap: 20px;
+  gap: 24px;
 }
 
 .importCard {
   display: grid;
-  min-height: 136px;
+  min-height: 120px;
+  align-items: center;
   overflow: hidden;
-  border-radius: 8px;
+  border: 1px solid rgba(22, 21, 17, 0.08);
+  border-radius: 12px;
   background: #f2ecdc;
-  grid-template-columns: 120px minmax(0, 1fr);
-  box-shadow:
-    0 10px 26px rgba(37, 32, 23, 0.09),
-    inset 0 0 0 1px rgba(22, 21, 17, 0.08);
+  grid-template-columns: 88px minmax(0, 1fr);
+  column-gap: 12px;
 }
 
 .importCardNoImage {
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: 88px minmax(0, 1fr);
 }
 
-.importCard > img,
+.importCardThumbnail {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 12px 0 0 12px;
+  background: #eee;
+}
+
+.importCardThumbnail > img,
 .importFallback,
 .neutralPreview {
   width: 100%;
   height: 100%;
-  min-height: 136px;
   object-fit: cover;
+  object-position: center;
 }
 
 .importFallback {
@@ -1235,39 +1309,47 @@
   flex-direction: column;
   justify-content: center;
   padding: 16px;
-  gap: 12px;
 }
 
-.importCardCopy > div {
+.importCardHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
-.importCardCopy > div span {
+.importCardHeader span {
   overflow: hidden;
+  color: #6e6458;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.05em;
+  line-height: 1;
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-.importCardCopy a {
+.importCardHeader a {
+  display: inline-flex;
   flex: none;
-  color: #2268c9;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  opacity: 0.6;
+}
+
+.importCardCopy label {
+  min-width: 0;
+  margin-top: 4px;
 }
 
 .importCardCopy textarea {
+  display: -webkit-box;
   width: 100%;
-  min-height: 2.12em;
+  height: 2.4em;
+  max-height: 2.4em;
+  min-height: 0;
   overflow: hidden;
   padding: 0;
   border: 0;
@@ -1276,10 +1358,73 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.035em;
-  line-height: 1.06;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.importCardMeta {
+  margin: 6px 0 0;
+  overflow: hidden;
+  color: #6e6458;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.confirmScreen .importCard {
+  padding: 12px;
+  border-radius: 20px;
+}
+
+.confirmScreen .importCardThumbnail {
+  position: relative;
+  border-radius: 8px;
+}
+
+.confirmScreen .importCardThumbnail::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px oklch(0 0 0 / 0.1);
+  content: "";
+  pointer-events: none;
+}
+
+.confirmScreen .importCardCopy {
+  padding: 0 4px 0 0;
+}
+
+.confirmScreen .previewSkeleton .skeletonImage {
+  min-height: 88px;
+  border-radius: 8px;
+}
+
+.confirmScreen .previewSkeleton .skeletonCopy {
+  padding: 0 4px 0 0;
+  gap: 8px;
+}
+
+.importCardHeader a {
+  position: relative;
+}
+
+.importCardHeader a::after {
+  position: absolute;
+  inset: -14px;
+  content: "";
+}
+
+.importCardHeader a:focus-visible {
+  border-radius: 4px;
+  outline: 3px solid #5e49d8;
+  outline-offset: 4px;
 }
 
 .previewMini {
@@ -1312,7 +1457,11 @@
 
 .previewMini > img,
 .previewMini > .neutralPreview {
+  width: 100%;
+  height: 100%;
   min-height: 112px;
+  object-fit: cover;
+  object-position: center;
 }
 
 .previewMiniCopy {
@@ -2169,33 +2318,39 @@
 }
 
 .comfortScreen {
-  padding-top: 12px;
+  padding: 16px 20px 24px;
   gap: 16px;
 }
 
 .privacyPromise {
   display: flex;
-  align-items: center;
-  padding: 11px 12px;
-  gap: 9px;
-  border-radius: 8px;
+  align-items: flex-start;
+  padding: 12px 16px;
+  gap: 8px;
+  border-radius: 12px;
   background: #e8efd0;
+}
+
+.privacyPromise svg {
+  flex: none;
+  margin-top: 1px;
 }
 
 .privacyPromise p {
   margin: 0;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 11.5px;
-  line-height: 1.35;
+  font-size: 12px;
+  line-height: 1.4;
+  text-wrap: pretty;
 }
 
 .comfortOptionCard {
   display: grid;
-  min-height: 132px;
+  min-height: 136px;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 12px;
   background: #f2ecdc;
-  grid-template-columns: 108px minmax(0, 1fr);
+  grid-template-columns: 112px minmax(0, 1fr);
   box-shadow: inset 0 0 0 1px rgba(22, 21, 17, 0.08);
 }
 
@@ -2203,20 +2358,22 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  outline: 1px solid oklch(0 0 0 / 0.1);
+  outline-offset: -1px;
 }
 
 .comfortOptionCard > div {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  padding: 12px;
+  padding: 16px;
 }
 
 .comfortOptionCard > div > span {
   color: #6e6458;
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -2226,27 +2383,30 @@
 }
 
 .comfortOptionCard h2 {
-  margin-top: 6px;
+  margin-top: 4px;
   font-size: 20px;
   letter-spacing: -0.035em;
-  line-height: 1.05;
+  line-height: 1.1;
+  text-wrap: balance;
 }
 
 .comfortOptionCard p {
-  margin-top: 3px;
+  margin-top: 4px;
   color: #5f574c;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 .comfortOptionCard > div > div {
   display: grid;
   margin-top: auto;
-  gap: 2px;
+  gap: 4px;
 }
 
 .comfortOptionCard > div > div strong {
   font-size: 18px;
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.025em;
 }
 
@@ -2254,15 +2414,24 @@
   color: #6e6458;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 10px;
+  font-variant-numeric: tabular-nums;
 }
 
-.comfortQuestion .eyebrow {
-  margin-bottom: 7px;
+.comfortOptionCard .priceStamp {
+  margin-top: 8px;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.comfortQuestion {
+  margin-top: 8px;
 }
 
 .comfortQuestion h1 {
-  font-size: 32px;
-  line-height: 1.04;
+  font-size: 28px;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  text-wrap: balance;
 }
 
 .comfortChoices {
@@ -2270,17 +2439,17 @@
   margin: 0;
   padding: 0;
   border: 0;
-  gap: 7px;
+  gap: 8px;
 }
 
 .comfortChoices label {
   display: flex;
-  min-height: 61px;
+  min-height: 64px;
   align-items: center;
-  padding: 9px 12px;
-  gap: 10px;
+  padding: 12px 16px;
+  gap: 12px;
   border: 1px solid rgba(22, 21, 17, 0.16);
-  border-radius: 8px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.58);
   cursor: pointer;
   transition:
@@ -2297,17 +2466,20 @@
 .comfortChoices label > span {
   display: grid;
   flex: 1;
-  gap: 2px;
+  gap: 4px;
 }
 
 .comfortChoices strong {
-  font-size: 14px;
+  font-size: 15px;
+  line-height: 1.2;
 }
 
 .comfortChoices small {
   color: #5f574c;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 1.4;
+  text-wrap: pretty;
 }
 
 .comfortChoices label > svg {
@@ -2316,6 +2488,10 @@
 
 .comfortChoices label:has(input:checked) > svg {
   opacity: 1;
+}
+
+.comfortChoices label:active {
+  transform: scale(0.96);
 }
 
 .comfortScreen > .greenAction {
@@ -2781,9 +2957,28 @@
   background: #fffbea;
 }
 
+.phasePanelHeading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.phasePanelHeading .phasePanelIcon,
+.phasePanelHeading .bookingMark {
+  width: 36px;
+  height: 36px;
+}
+
+.phasePanelHeading .phasePanelIcon svg,
+.phasePanelHeading .bookingMark svg {
+  width: 18px;
+  height: 18px;
+}
+
 .phasePanelIcon,
 .bookingMark {
   display: grid;
+  flex: none;
   width: 48px;
   height: 48px;
   place-items: center;
@@ -2908,29 +3103,25 @@
 
 .authorizationCard > div {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  margin-top: 10px;
-  padding-top: 12px;
+  margin-top: 8px;
+  padding-top: 16px;
+  gap: 16px;
   border-top: 1px solid rgba(255, 251, 234, 0.2);
 }
 
 .authorizationCard > div span {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 1.2;
 }
 
 .authorizationCard > div strong {
   font-size: 28px;
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
-}
-
-.authorizationCard footer {
-  display: flex;
-  justify-content: space-between;
-  color: rgba(255, 251, 234, 0.66);
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 10px;
+  line-height: 1;
 }
 
 .bookingPanel {
@@ -3125,8 +3316,8 @@
 }
 
 @media (max-height: 700px) {
-  .homeContent {
-    padding-top: 26px;
+  .homeCopy h1 {
+    font-size: 34px;
   }
 
   .formScreen h1,
@@ -3169,11 +3360,11 @@
   }
 
   .comfortScreen {
-    gap: 11px;
+    gap: 12px;
   }
 
   .comfortOptionCard {
-    min-height: 112px;
+    min-height: 120px;
   }
 
   .comfortQuestion h1 {
@@ -3181,7 +3372,7 @@
   }
 
   .comfortChoices label {
-    min-height: 55px;
+    min-height: 56px;
   }
 
   .revealScreen {
