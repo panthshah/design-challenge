@@ -487,22 +487,10 @@ function ShaderCardBackdrop({
 const WELCOME_SEEN_KEY = "quorum:welcome-seen";
 
 const howItWorksSteps = [
-  {
-    title: "Add real options",
-    body: "Paste a listing. Quorum splits the total into each person’s share.",
-  },
-  {
-    title: "Answer privately",
-    body: "Say “Works for me” or “Too much.” Nobody sees your answer.",
-  },
-  {
-    title: "Pick from what works",
-    body: "Only options that work for everyone move forward.",
-  },
-  {
-    title: "Approve, then book",
-    body: "You approve your exact share. Nobody is charged until everyone does.",
-  },
+  { title: "Add a place", body: "$1,860 becomes $310 each." },
+  { title: "Answer privately", body: "Only you see your answer." },
+  { title: "Pick what works", body: "Only plans everyone can afford." },
+  { title: "Book together", body: "No one pays until everyone approves." },
 ] as const;
 
 function refundStages(provider: string) {
@@ -1679,14 +1667,10 @@ function PrototypeLandingContent() {
               <span className={styles.stepLabel}>How Quorum works</span>
             </header>
 
-            <div className={`${styles.optionScreen} ${styles.infoScreen}`}>
-              <div>
-                <h1>Plan together. Answer alone.</h1>
-                <p className={styles.formIntro}>
-                  Quorum helps your group pick a trip everyone can afford,
-                  without anyone saying what they can afford.
-                </p>
-              </div>
+            <div
+              className={`${styles.optionScreen} ${styles.infoScreen} ${styles.welcomeScreen}`}
+            >
+              <h1>Plan together. Answer alone.</h1>
 
               <ol className={styles.howSteps} aria-label="How Quorum works">
                 {howItWorksSteps.map((step, index) => (
@@ -1701,29 +1685,6 @@ function PrototypeLandingContent() {
                   </li>
                 ))}
               </ol>
-
-              <div className={styles.importPromise}>
-                <LockSimple size={22} weight="fill" aria-hidden="true" />
-                <div>
-                  <strong>Your answer stays yours.</strong>
-                  <p>
-                    Not even the group creator can see it. The group only
-                    learns which options cleared, never who said no.
-                  </p>
-                </div>
-              </div>
-
-              <div className={`${styles.importPromise} ${styles.infoQuestion}`}>
-                <UsersThree size={22} weight="fill" aria-hidden="true" />
-                <div>
-                  <strong>What if someone doesn’t approve?</strong>
-                  <p>
-                    They get a private reminder, then a deadline. If anyone
-                    doesn’t approve, the booking doesn’t go through and nobody
-                    is charged.
-                  </p>
-                </div>
-              </div>
 
               <div className={styles.infoFooter}>
                 <button
@@ -1742,7 +1703,7 @@ function PrototypeLandingContent() {
                   type="button"
                   onClick={() => openRefunds("welcome")}
                 >
-                  What if plans change? <span>Cancellations & refunds</span>
+                  Cancellations & refunds
                 </button>
               </div>
             </div>

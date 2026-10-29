@@ -3574,10 +3574,6 @@
   background: #f2ecdc;
 }
 
-.infoScreen .infoQuestion {
-  background: #e8efd0;
-}
-
 .infoFooter .textAction,
 .phasePanel .textAction {
   font-size: 13px;
@@ -3659,4 +3655,48 @@
   background: #f2ecdc;
   color: #6e6458;
   box-shadow: inset 0 0 0 1px rgba(22, 21, 17, 0.12);
+}
+
+/* Welcome: minimal step list */
+.welcomeScreen {
+  gap: 0;
+}
+
+.welcomeScreen h1 {
+  max-width: 9ch;
+  margin-top: 12px;
+  font-size: 48px;
+}
+
+.welcomeScreen .howSteps {
+  margin-top: 52px;
+}
+
+.welcomeScreen .howSteps li {
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  padding-bottom: 32px;
+  gap: 16px;
+}
+
+.welcomeScreen .howSteps li:not(:last-child)::after {
+  top: 40px;
+  bottom: 4px;
+  left: 17.5px;
+}
+
+.welcomeScreen .howStepNumber {
+  width: 36px;
+  height: 36px;
+  font-size: 14px;
+}
+
+.welcomeScreen .howSteps strong {
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.welcomeScreen .howSteps p {
+  margin-top: 2px;
+  font-size: 15px;
 }
