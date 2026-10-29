@@ -3445,3 +3445,218 @@
     transition: none;
   }
 }
+
+/* Home: "How it works" link beside the wordmark */
+.homeTop {
+  position: absolute;
+  top: 12%;
+  right: 24px;
+  left: 24px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.homeTop .homeBrand {
+  position: static;
+}
+
+.homeHelpLink {
+  min-height: 44px;
+  padding: 0;
+  color: rgba(22, 21, 17, 0.72);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.homeHelpLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.homeHelpLink:focus-visible {
+  outline: 3px solid #5e49d8;
+  outline-offset: 3px;
+}
+
+/* Welcome / How it works and Cancellations & refunds */
+.infoScreen {
+  gap: 18px;
+}
+
+.infoScreen h1 {
+  margin: 0;
+  font-size: 43px;
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  line-height: 1.02;
+}
+
+.infoScreen .formIntro {
+  margin-top: 14px;
+}
+
+.howSteps,
+.policyTimeline {
+  display: grid;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.howSteps li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  padding-bottom: 18px;
+  gap: 14px;
+}
+
+.howSteps li:not(:last-child)::after {
+  position: absolute;
+  top: 32px;
+  bottom: 2px;
+  left: 14.5px;
+  width: 1px;
+  background: #d8d0c1;
+  content: "";
+}
+
+.howStepNumber {
+  z-index: 1;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid #161511;
+  border-radius: 50%;
+  background: #d5eb84;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.howSteps strong,
+.policyTimeline strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.howSteps p,
+.policyTimeline p {
+  margin: 4px 0 0;
+  color: #5f574c;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.infoFooter {
+  position: sticky;
+  z-index: 3;
+  bottom: 0;
+  display: grid;
+  margin: auto -20px -20px;
+  padding: 18px 20px 14px;
+  gap: 2px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 251, 234, 0),
+    #fffbea 22px
+  );
+}
+
+.infoScreen .importPromise {
+  margin: 0;
+  background: #f2ecdc;
+}
+
+.infoScreen .infoQuestion {
+  background: #e8efd0;
+}
+
+.infoFooter .textAction,
+.phasePanel .textAction {
+  font-size: 13px;
+}
+
+.policySource {
+  display: grid;
+  padding: 16px;
+  gap: 4px;
+  border-radius: 8px;
+  background: #161511;
+  color: #fffbea;
+}
+
+.policySource small {
+  color: #d5eb84;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.policySource h3 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.policySource a {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 6px;
+  gap: 6px;
+  color: #fffbea;
+  font-size: 13px;
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
+.policyTimeline {
+  gap: 0;
+  border-radius: 8px;
+  background: #fffdf3;
+  box-shadow: inset 0 0 0 1px rgba(22, 21, 17, 0.1);
+}
+
+.policyTimeline li {
+  padding: 15px 16px;
+}
+
+.policyTimeline li + li {
+  border-top: 1px solid rgba(22, 21, 17, 0.08);
+}
+
+.policyStageHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.policyTagFree,
+.policyTagProvider {
+  flex: none;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.policyTagFree {
+  background: #d5eb84;
+  color: #24553a;
+}
+
+.policyTagProvider {
+  background: #f2ecdc;
+  color: #6e6458;
+  box-shadow: inset 0 0 0 1px rgba(22, 21, 17, 0.12);
+}

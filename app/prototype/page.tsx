@@ -39,7 +39,9 @@ type Screen =
   | "group"
   | "add-option"
   | "confirm-option"
-  | "comfort";
+  | "comfort"
+  | "welcome"
+  | "refunds";
 type EntryPath = "create" | "join";
 type OptionCategory = "stay" | "travel" | "activity";
 type GroupPhase =
@@ -482,6 +484,50 @@ function ShaderCardBackdrop({
   );
 }
 
+const WELCOME_SEEN_KEY = "quorum:welcome-seen";
+
+const howItWorksSteps = [
+  {
+    title: "Add real options",
+    body: "Paste a listing. Quorum splits the total into each person’s share.",
+  },
+  {
+    title: "Answer privately",
+    body: "Say “Works for me” or “Too much.” Nobody sees your answer.",
+  },
+  {
+    title: "Pick from what works",
+    body: "Only options that work for everyone move forward.",
+  },
+  {
+    title: "Approve, then book",
+    body: "You approve your exact share. Nobody is charged until everyone does.",
+  },
+] as const;
+
+function refundStages(provider: string) {
+  return [
+    {
+      title: "Before everyone approves",
+      tag: "No charge",
+      charged: false,
+      body: "Nothing is charged. You can change your answers or leave the group at any time.",
+    },
+    {
+      title: "If someone doesn’t approve",
+      tag: "No charge",
+      charged: false,
+      body: "They get a private reminder, then a deadline. If it passes, the booking doesn’t go through and nobody is charged.",
+    },
+    {
+      title: "After booking",
+      tag: `${provider === "the provider" ? "Provider" : provider} policy`,
+      charged: true,
+      body: `Cancellations follow ${provider}’s policy. If you cancel, your refund depends on that policy and when you cancel.`,
+    },
+  ];
+}
+
 function PrototypeLandingContent() {
   const searchParams = useSearchParams();
   const deepLinkedGroupId = searchParams.get("invite");
@@ -490,6 +536,11 @@ function PrototypeLandingContent() {
   const [entryPath, setEntryPath] = useState<EntryPath>(
     deepLinked ? "join" : "create",
   );
+  // First-run explainer: which path to continue to after it, or null when
+  // opened from the home link.
+  const [welcomeNext, setWelcomeNext] = useState<EntryPath | null>(null);
+  // Screen to return to when leaving the cancellation & refunds screen.
+  const [refundsReturn, setRefundsReturn] = useState<Screen>("group");
   const [groupName, setGroupName] = useState("");
   const [selectedVibeIndex, setSelectedVibeIndex] = useState<number | null>(
     null,
@@ -862,6 +913,52 @@ function PrototypeLandingContent() {
       : {}),
   } as CSSProperties;
 
+  function hasSeenWelcome() {
+    try {
+      return window.localStorage.getItem(WELCOME_SEEN_KEY) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function markWelcomeSeen() {
+    try {
+      window.localStorage.setItem(WELCOME_SEEN_KEY, "1");
+    } catch {
+      // Private mode or blocked storage: the explainer simply shows again.
+    }
+  }
+
+  // Entry buttons on home: first-time users see how Quorum works before
+  // creating or joining a group.
+  function enterPath(path: EntryPath) {
+    if (!hasSeenWelcome()) {
+      setWelcomeNext(path);
+      setScreen("welcome");
+      return;
+    }
+    startPath(path);
+  }
+
+  function openWelcome() {
+    setWelcomeNext(null);
+    setScreen("welcome");
+  }
+
+  function finishWelcome() {
+    markWelcomeSeen();
+    if (welcomeNext) {
+      startPath(welcomeNext);
+      return;
+    }
+    setScreen("home");
+  }
+
+  function openRefunds(from: Screen) {
+    setRefundsReturn(from);
+    setScreen("refunds");
+  }
+
   function startPath(path: EntryPath) {
     setEntryPath(path);
     setCopied(false);
@@ -948,6 +1045,11 @@ function PrototypeLandingContent() {
     if (screen === "comfort") {
       setComfortChoice(null);
       setScreen("group");
+      return;
+    }
+
+    if (screen === "refunds") {
+      setScreen(refundsReturn);
       return;
     }
 
@@ -1443,6 +1545,9 @@ function PrototypeLandingContent() {
     groupOptions[0] ??
     null;
   const myShare = sharedSnapshot?.privateState?.myShareCents ?? null;
+  // The refunds screen names the booked provider once an option is locked.
+  const refundsOption =
+    activeGroup?.selectedOptionId ? selectedConsensusOption : null;
   const hasApproved =
     sharedSnapshot?.privateState?.myPaymentStatus === "approved";
   const myUnreviewedCount = groupOptions.filter(
@@ -1517,7 +1622,16 @@ function PrototypeLandingContent() {
         {screen === "home" && (
           <div className={`${styles.screen} ${styles.homeScreen}`} key="home">
             <div className={styles.homeBody}>
-              <div className={styles.homeBrand}>Quorum</div>
+              <div className={styles.homeTop}>
+                <div className={styles.homeBrand}>Quorum</div>
+                <button
+                  className={styles.homeHelpLink}
+                  type="button"
+                  onClick={openWelcome}
+                >
+                  How it works
+                </button>
+              </div>
 
               <div className={styles.homeLower}>
                 <div className={styles.homeCopy}>
@@ -1534,18 +1648,186 @@ function PrototypeLandingContent() {
                   <button
                     className={styles.greenAction}
                     type="button"
-                    onClick={() => startPath("create")}
+                    onClick={() => enterPath("create")}
                   >
                     Create a group
                   </button>
                   <button
                     className={`${styles.textAction} ${styles.homeTextAction}`}
                     type="button"
-                    onClick={() => startPath("join")}
+                    onClick={() => enterPath("join")}
                   >
                     Join with an invite
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {screen === "welcome" && (
+          <div className={styles.screen} key="welcome">
+            <header className={styles.header}>
+              <button
+                className={styles.backAction}
+                type="button"
+                onClick={() => setScreen("home")}
+                aria-label="Back to Quorum entry"
+              >
+                Back
+              </button>
+              <span className={styles.stepLabel}>How Quorum works</span>
+            </header>
+
+            <div className={`${styles.optionScreen} ${styles.infoScreen}`}>
+              <div>
+                <h1>Plan together. Answer alone.</h1>
+                <p className={styles.formIntro}>
+                  Quorum helps your group pick a trip everyone can afford,
+                  without anyone saying what they can afford.
+                </p>
+              </div>
+
+              <ol className={styles.howSteps} aria-label="How Quorum works">
+                {howItWorksSteps.map((step, index) => (
+                  <li key={step.title}>
+                    <span className={styles.howStepNumber} aria-hidden="true">
+                      {index + 1}
+                    </span>
+                    <div>
+                      <strong>{step.title}</strong>
+                      <p>{step.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+
+              <div className={styles.importPromise}>
+                <LockSimple size={22} weight="fill" aria-hidden="true" />
+                <div>
+                  <strong>Your answer stays yours.</strong>
+                  <p>
+                    Not even the group creator can see it. The group only
+                    learns which options cleared, never who said no.
+                  </p>
+                </div>
+              </div>
+
+              <div className={`${styles.importPromise} ${styles.infoQuestion}`}>
+                <UsersThree size={22} weight="fill" aria-hidden="true" />
+                <div>
+                  <strong>What if someone doesn’t approve?</strong>
+                  <p>
+                    They get a private reminder, then a deadline. If anyone
+                    doesn’t approve, the booking doesn’t go through and nobody
+                    is charged.
+                  </p>
+                </div>
+              </div>
+
+              <div className={styles.infoFooter}>
+                <button
+                  className={styles.greenAction}
+                  type="button"
+                  onClick={finishWelcome}
+                >
+                  {welcomeNext === "join"
+                    ? "Join my group"
+                    : welcomeNext === "create"
+                      ? "Create a group"
+                      : "Got it"}
+                </button>
+                <button
+                  className={styles.textAction}
+                  type="button"
+                  onClick={() => openRefunds("welcome")}
+                >
+                  What if plans change? <span>Cancellations & refunds</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {screen === "refunds" && (
+          <div className={styles.screen} key="refunds">
+            <header className={styles.header}>
+              <button
+                className={styles.backAction}
+                type="button"
+                onClick={goBack}
+                aria-label="Back"
+              >
+                Back
+              </button>
+              <span className={styles.stepLabel}>Cancellations & refunds</span>
+            </header>
+
+            <div className={`${styles.optionScreen} ${styles.infoScreen}`}>
+              <div>
+                <h1>If plans change.</h1>
+                <p className={styles.formIntro}>
+                  Quorum books directly with the provider, so their cancellation
+                  policy applies. Here’s what that means for your group.
+                </p>
+              </div>
+
+              {refundsOption && (
+                <article className={styles.policySource}>
+                  <small>Policy set by {refundsOption.provider}</small>
+                  <h3>{refundsOption.title}</h3>
+                  <a
+                    href={refundsOption.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Read {refundsOption.provider}’s cancellation policy
+                    <ArrowSquareOut size={15} weight="bold" aria-hidden="true" />
+                  </a>
+                </article>
+              )}
+
+              <ol className={styles.policyTimeline} aria-label="When you’re charged">
+                {refundStages(refundsOption?.provider ?? "the provider").map(
+                  (stage) => (
+                    <li key={stage.title}>
+                      <div className={styles.policyStageHead}>
+                        <strong>{stage.title}</strong>
+                        <span
+                          className={
+                            stage.charged
+                              ? styles.policyTagProvider
+                              : styles.policyTagFree
+                          }
+                        >
+                          {stage.tag}
+                        </span>
+                      </div>
+                      <p>{stage.body}</p>
+                    </li>
+                  ),
+                )}
+              </ol>
+
+              <div className={styles.importPromise}>
+                <CheckCircle size={22} weight="fill" aria-hidden="true" />
+                <div>
+                  <strong>You never cover someone else’s share.</strong>
+                  <p>
+                    If someone cancels after booking, it’s settled between them
+                    and the provider. Your share stays the same.
+                  </p>
+                </div>
+              </div>
+
+              <div className={styles.infoFooter}>
+                <button
+                  className={styles.greenAction}
+                  type="button"
+                  onClick={goBack}
+                >
+                  Got it
+                </button>
               </div>
             </div>
           </div>
@@ -2277,6 +2559,13 @@ function PrototypeLandingContent() {
                     {sharedSnapshot?.progress?.paymentTotal ?? activeGroup.memberCount}{" "}
                     shares approved.
                   </p>
+                  <button
+                    className={styles.textAction}
+                    type="button"
+                    onClick={() => openRefunds("group")}
+                  >
+                    What if someone cancels? <span>Cancellations & refunds</span>
+                  </button>
                 </section>
               )}
 
@@ -2326,6 +2615,13 @@ function PrototypeLandingContent() {
                           Open original provider link
                         </a>
                       </article>
+                      <button
+                        className={styles.secondaryAction}
+                        type="button"
+                        onClick={() => openRefunds("group")}
+                      >
+                        Cancellations & refunds
+                      </button>
                       <button
                         className={styles.secondaryAction}
                         type="button"
