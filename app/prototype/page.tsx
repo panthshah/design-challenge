@@ -486,12 +486,193 @@ function ShaderCardBackdrop({
 
 const WELCOME_SEEN_KEY = "quorum:welcome-seen";
 
-const howItWorksSteps = [
-  { title: "Add a place", body: "$1,860 becomes $310 each." },
-  { title: "Answer privately", body: "Only you see your answer." },
-  { title: "Pick what works", body: "Only plans everyone can afford." },
-  { title: "Book together", body: "No one pays until everyone approves." },
+const WELCOME_STEP_MS = 4200;
+
+const welcomeSteps = [
+  { title: "Add a place.", body: "Paste a link. Quorum splits the cost into each person’s share." },
+  { title: "Answer privately.", body: "Works for me, or too much. Only you see your answer." },
+  { title: "See what works.", body: "The group only sees which plans cleared. Never who said no." },
+  { title: "Book together.", body: "No one pays until everyone approves. No one fronts, no one chases." },
 ] as const;
+
+function WelcomeVisual({ index }: { index: number }) {
+  if (index === 0) {
+    return (
+      <div className={styles.welcomeVisual}>
+        <article className={styles.wvListing}>
+          <small>Airbnb · Stay</small>
+          <strong>Mission Beach house</strong>
+          <span>Nov 13–15 · $1,860 total</span>
+        </article>
+        <div className={styles.wvShare}>
+          <span>Your share</span>
+          <strong>$310</strong>
+          <small>Each of 6 people</small>
+        </div>
+      </div>
+    );
+  }
+  if (index === 1) {
+    return (
+      <div className={styles.welcomeVisual}>
+        <p className={styles.wvPrivate}>
+          <LockSimple size={14} weight="fill" aria-hidden="true" /> Only you see
+          this
+        </p>
+        <div className={`${styles.wvChoice} ${styles.wvChoiceOn}`}>
+          <div>
+            <strong>Works for me</strong>
+            <span>I’d feel good saying yes.</span>
+          </div>
+          <Check size={18} weight="bold" aria-hidden="true" />
+        </div>
+        <div className={styles.wvChoice}>
+          <div>
+            <strong>Too much</strong>
+            <span>I’d rather choose a lower-cost option.</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (index === 2) {
+    return (
+      <div className={styles.welcomeVisual}>
+        <div className={`${styles.wvOption} ${styles.wvOptionOn}`}>
+          <strong>Mission Beach house</strong>
+          <span>
+            <CheckCircle size={16} weight="fill" aria-hidden="true" /> Works for
+            everyone
+          </span>
+        </div>
+        <div className={styles.wvOption}>
+          <strong>Gaslamp loft</strong>
+          <span>Didn’t clear</span>
+        </div>
+        <div className={styles.wvOption}>
+          <strong>Coronado suite</strong>
+          <span>Didn’t clear</span>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className={styles.welcomeVisual}>
+      <article className={styles.wvBooked}>
+        <span className={styles.wvBookedMark}>
+          <Check size={22} weight="bold" aria-hidden="true" />
+        </span>
+        <strong>Booked for everyone.</strong>
+        <div>
+          <span>6 of 6 approved</span>
+          <span>$310 each</span>
+        </div>
+      </article>
+    </div>
+  );
+}
+
+function WelcomeStory({
+  reducedMotion,
+  ctaLabel,
+  onBack,
+  onDone,
+}: {
+  reducedMotion: boolean;
+  ctaLabel: string;
+  onBack: () => void;
+  onDone: () => void;
+}) {
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const pressStart = useRef(0);
+  const step = welcomeSteps[index];
+  const last = welcomeSteps.length - 1;
+
+  return (
+    <div className={`${styles.screen} ${styles.welcomeStory}`}>
+      <div className={styles.welcomeTop}>
+        <header className={styles.header}>
+          <button className={styles.backAction} type="button" onClick={onBack}>
+            Back
+          </button>
+          {index < last && (
+            <button
+              className={styles.backAction}
+              type="button"
+              onClick={() => setIndex(last)}
+            >
+              Skip
+            </button>
+          )}
+        </header>
+        <ol className={styles.storyBar} aria-label={`Step ${index + 1} of ${welcomeSteps.length}`}>
+          {welcomeSteps.map((item, i) => (
+            <li key={item.title}>
+              <span
+                className={
+                  i < index
+                    ? styles.storyBarDone
+                    : i === index
+                      ? reducedMotion
+                        ? styles.storyBarDone
+                        : styles.storyBarActive
+                      : undefined
+                }
+                style={
+                  i === index && !reducedMotion
+                    ? {
+                        animationDuration: `${WELCOME_STEP_MS}ms`,
+                        animationPlayState: paused ? "paused" : "running",
+                      }
+                    : undefined
+                }
+                key={i === index ? `active-${index}` : `bar-${i}`}
+                onAnimationEnd={() => {
+                  if (i === index && index < last) setIndex(index + 1);
+                }}
+              />
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div
+        className={styles.storyStage}
+        onPointerDown={() => {
+          pressStart.current = Date.now();
+          setPaused(true);
+        }}
+        onPointerUp={(event) => {
+          setPaused(false);
+          // Holding pauses the story; only a quick tap changes step.
+          if (Date.now() - pressStart.current > 300) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          const goBack = event.clientX - rect.left < rect.width / 3;
+          setIndex((current) =>
+            goBack ? Math.max(0, current - 1) : Math.min(last, current + 1),
+          );
+        }}
+        onPointerLeave={() => setPaused(false)}
+        aria-live="polite"
+      >
+        <div className={styles.storyCopy} key={`copy-${index}`}>
+          <h1>{step.title}</h1>
+          <p>{step.body}</p>
+        </div>
+        <div className={styles.storyVisualWrap} key={`visual-${index}`}>
+          <WelcomeVisual index={index} />
+        </div>
+      </div>
+
+      <div className={styles.storyFooter}>
+        <button className={styles.greenAction} type="button" onClick={onDone}>
+          {ctaLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function refundStages(provider: string) {
   return [
@@ -1654,60 +1835,19 @@ function PrototypeLandingContent() {
         )}
 
         {screen === "welcome" && (
-          <div className={styles.screen} key="welcome">
-            <header className={styles.header}>
-              <button
-                className={styles.backAction}
-                type="button"
-                onClick={() => setScreen("home")}
-                aria-label="Back to Quorum entry"
-              >
-                Back
-              </button>
-              <span className={styles.stepLabel}>How Quorum works</span>
-            </header>
-
-            <div
-              className={`${styles.optionScreen} ${styles.infoScreen} ${styles.welcomeScreen}`}
-            >
-              <h1>Plan together. Answer alone.</h1>
-
-              <ol className={styles.howSteps} aria-label="How Quorum works">
-                {howItWorksSteps.map((step, index) => (
-                  <li key={step.title}>
-                    <span className={styles.howStepNumber} aria-hidden="true">
-                      {index + 1}
-                    </span>
-                    <div>
-                      <strong>{step.title}</strong>
-                      <p>{step.body}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-
-              <div className={styles.infoFooter}>
-                <button
-                  className={styles.greenAction}
-                  type="button"
-                  onClick={finishWelcome}
-                >
-                  {welcomeNext === "join"
-                    ? "Join my group"
-                    : welcomeNext === "create"
-                      ? "Create a group"
-                      : "Got it"}
-                </button>
-                <button
-                  className={styles.textAction}
-                  type="button"
-                  onClick={() => openRefunds("welcome")}
-                >
-                  Cancellations & refunds
-                </button>
-              </div>
-            </div>
-          </div>
+          <WelcomeStory
+            key="welcome"
+            reducedMotion={reducedMotion}
+            ctaLabel={
+              welcomeNext === "join"
+                ? "Join my group"
+                : welcomeNext === "create"
+                  ? "Create a group"
+                  : "Got it"
+            }
+            onBack={() => setScreen("home")}
+            onDone={finishWelcome}
+          />
         )}
 
         {screen === "refunds" && (
@@ -2576,13 +2716,6 @@ function PrototypeLandingContent() {
                           Open original provider link
                         </a>
                       </article>
-                      <button
-                        className={styles.secondaryAction}
-                        type="button"
-                        onClick={() => openRefunds("group")}
-                      >
-                        Cancellations & refunds
-                      </button>
                       <button
                         className={styles.secondaryAction}
                         type="button"
